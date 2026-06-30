@@ -1,0 +1,20 @@
+{
+  "string": [
+    {
+      "name": "demo_desc",
+      "value": "The demo of OpenAPISDK"
+    },
+    {
+      "name": "demo_ability_desc",
+      "value": "The ability of the demo"
+    },
+    {
+      "name": "demo_label",
+      "value": "OpenAPISDK"
+    },
+    {
+      "name": "internet_permission_reason",
+      "value": "Used to access the network to obtain map data."
+    }
+  ]
+}

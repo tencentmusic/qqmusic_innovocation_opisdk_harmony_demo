@@ -1,0 +1,104 @@
+{
+  "module": {
+    "querySchemes": [
+      "https",
+      "qqopenapi",
+      "weixin",
+      "wxopensdk",
+      "qqmusic",
+      "mqq"
+    ],
+    "name": "demo",
+    "type": "entry",
+    "description": "$string:demo_desc",
+    "mainElement": "DemoAbility",
+    "deviceTypes": [
+      "phone",
+      "car",
+      "tv",
+      "tablet"
+    ],
+    "deliveryWithInstall": true,
+    "installationFree": false,
+    "pages": "$profile:main_pages",
+    "abilities": [
+      {
+        "name": "DemoAbility",
+        "srcEntry": "./ets/ability/DemoAbility.ets",
+        "description": "$string:demo_ability_desc",
+        "icon": "$media:logo",
+        "label": "$string:demo_label",
+        "startWindowIcon": "$media:ic_launcher_foreground",
+        "startWindowBackground": "$color:start_window_background",
+        "exported": true,
+        "backgroundModes": [
+          'audioPlayback',
+          'dataTransfer',
+          'audioRecording',
+          'location',
+        ],
+        "skills": [
+          {
+            "entities": [
+              "entity.system.home"
+            ],
+            "actions": [
+              "ohos.want.action.home"
+            ]
+          },
+          {
+            "entities": [
+              "entity.system.browser"
+            ],
+            "actions": [
+              "ohos.want.action.viewData"
+            ],
+            "uris": [
+              {
+                "scheme": "qqopenapi", // 接收 QQ 回调数据
+                "host": "100497308", // 业务申请的互联 appId
+                "pathRegex": "\\b(auth|share)\\b",
+                "linkFeature": "Login",
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "extensionAbilities": [
+      {
+        "name": "DemoBackupAbility",
+        "srcEntry": "./ets/backupability/DemoBackupAbility.ets",
+        "type": "backup",
+        "exported": false,
+        "metadata": [
+          {
+            "name": "ohos.extension.backup",
+            "resource": "$profile:backup_config"
+          }
+        ]
+      },
+      {
+        "name": "LoginRefreshWorkExtensionAbility",
+        "srcEntry": "./ets/worker/LoginRefreshWorkExtensionAbility.ets",
+        "type": "workScheduler"
+      }
+    ],
+    "requestPermissions": [
+      {
+        "name": "ohos.permission.INTERNET",
+        "reason": "$string:internet_permission_reason",
+        "usedScene": {
+          "when": "always"
+        }
+      },
+      {
+        "name": "ohos.permission.GET_NETWORK_INFO",
+        "reason": "$string:internet_permission_reason",
+        "usedScene": {
+          "when": "always"
+        }
+      }
+    ]
+  }
+}
