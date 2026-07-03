@@ -1,9 +1,10 @@
 {
   "sdkVersion": "3.11.67-SNAPSHOT",
-  "enableFeatures": [
+  "enableModules": [
     "@qqmusic/opisdk-lyricview",
     "@qqmusic/opisdk-personalassets",
     "@qqmusic/opisdk-mvplayer",
-    "@qqmusic/opisdk-tpush"
+    "@qqmusic/opisdk-tpush",
+    "@qqmusic/opisdk-traffic"
   ]
 }
