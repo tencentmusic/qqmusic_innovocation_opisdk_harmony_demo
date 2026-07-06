@@ -33,6 +33,7 @@ struct MainPage {
   aboutToDisappear() {
     // 移除监听，防止内存泄漏
     globalEventHandler.removeHandler(this);
+    this.homeViewModel.onDestroy()
     this.mineViewModel.onDestroy()
     this.playerViewModel.onDestroy()
   }
@@ -63,39 +64,31 @@ struct MainPage {
         case LoginEvent.MusicUserLogIn:
           MLog.d(this.TAG, "Handle Event: MusicUserLogIn");
           this.showLoginDialog(true);
-          // 登录成功后刷新续费提醒信息
-          this.mineViewModel.refreshVipRenewalInfo();
-          // 登录后刷新首页数据
-          this.homeViewModel.refreshAfterLogin();
-          break;
-
-        case LoginEvent.MusicAccountAutoLoginIn:
-          MLog.d(this.TAG, "Handle Event: LogIn/AutoLogin");
-          this.mineViewModel.updateData();
-          // 自动登录后也刷新首页数据
-          this.homeViewModel.refreshAfterLogin();
           break;
 
         case LoginEvent.MusicUserLogOut:
           MLog.d(this.TAG, "Handle Event: MusicUserLogOut");
           this.showLoginDialog(false);
-          this.homeViewModel.refreshAfterLogin();
-          break;
-
-        case LoginEvent.UserVipInfoUpdate:
-          MLog.d(this.TAG, "Handle Event: UserVipInfoUpdate");
-          if (event.data) {
-            this.mineViewModel.userVipInfo = event.data as IVipInfo;
-          }
           break;
 
         case LoginEvent.UserAccountLoginExpired:
+          MLog.d(this.TAG, "Handle Event: UserAccountLoginExpired");
           this.showLoginExpiredDialog();
           break;
 
         case LoginEvent.UserDeauthorization:
           MLog.d(this.TAG, "Handle Event: UserDeauthorization");
           this.showToastDialog("登录授权", "用户取消了登录授权");
+          break;
+
+        case LoginEvent.AcountDeregisterPending:
+          MLog.d(this.TAG, "Handle Event: AcountDeregisterPending");
+          this.showLoginExpiredDialog();
+          break;
+
+        case LoginEvent.AcountDeregisterDone:
+          MLog.d(this.TAG, "Handle Event: AcountDeregisterDone");
+          this.showLoginExpiredDialog();
           break;
 
         case LoginEvent.MusicAccountLoginFailed:
@@ -127,16 +120,6 @@ struct MainPage {
             }
           }
           this.showToastDialog("会员图标变化", iconDesc);
-          break;
-
-        case LoginEvent.AcountDeregisterPending:
-          MLog.d(this.TAG, "Handle Event: AcountDeregisterPending");
-          this.showLoginExpiredDialog();
-          break;
-
-        case LoginEvent.AcountDeregisterDone:
-          MLog.d(this.TAG, "Handle Event: AcountDeregisterDone");
-          this.showLoginExpiredDialog();
           break;
       }
     }

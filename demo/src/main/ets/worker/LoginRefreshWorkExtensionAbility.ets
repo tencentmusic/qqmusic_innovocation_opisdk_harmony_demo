@@ -5,7 +5,6 @@ import { MLog, OpenApiSdk } from '@qqmusic/opisdk-base';
 const TAG = "LoginRefreshWorkExtensionAbility";
 
 export default class LoginRefreshWorkExtensionAbility extends WorkSchedulerExtensionAbility {
-
   onWorkStart(workInfo: workScheduler.WorkInfo) {
     MLog.i(TAG, `onWorkStart, workId: ${workInfo.workId}`);
     this.ensureLoginModuleInit();
@@ -33,11 +32,11 @@ export default class LoginRefreshWorkExtensionAbility extends WorkSchedulerExten
       MLog.i(TAG, "Starting refresh access token logic...");
 
       // 执行自动登录(强登录刷新小票)
-      OpenApiSdk.loginApi?.loginManager.autoLoginToStrong((sus,msg)=>{
+      OpenApiSdk.loginApi?.autoLoginToStrong((sus, msg) => {
         if (sus) {
-          MLog.i(TAG,"后台任务刷新小票成功")
-        }else {
-          MLog.i(TAG,`后台任务刷新小票成失败${msg}`)
+          MLog.i(TAG, "后台任务刷新小票成功")
+        } else {
+          MLog.i(TAG, `后台任务刷新小票成失败${msg}`)
         }
       });
 

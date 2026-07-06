@@ -2,13 +2,7 @@ import { MLog, OpenApiSdk } from '@qqmusic/opisdk-base'
 import { IMediaEventListener, OnPlayerErrorListener, IPayAccessInfo } from '@qqmusic/opisdk-entity'
 import { PlayErrorUtils } from '@qqmusic/opisdk-musicplayer'
 import {
-  IProgressChangeListener,
-  ISongInfo,
-  PlayStatus,
-  PlayerEnums,
-  PlayerEvent,
-  ISoundEffectItem,
-  PlayError
+  IProgressChangeListener, ISongInfo, PlayStatus, PlayerEnums, PlayerEvent, ISoundEffectItem, PlayError
 } from '@qqmusic/opisdk-qmutils'
 import { InsightUtil } from '../utils/InsightUtil'
 import { ToastUtil } from '../utils/ToastUtil'
@@ -38,6 +32,7 @@ export class QualityItem {
     this.isCurrent = isCurrent
   }
 }
+
 /**
  * 播放器 ViewModel
  * 管理播放器状态，注册事件监听，暴露响应式状态给 UI 层
@@ -81,23 +76,16 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
   @Trace isFavorite: boolean = false
   // 偏好音质
   @Trace preferSongQuality: PlayerEnums.Quality = PlayerEnums.Quality.HQ;
-
-
   private pendingStartPlay: boolean = false;
-
   private hasStartPlay: boolean = false;
-
   // 是否已完成初始化
   private isInitialized: boolean = false
-
   // 已提示过“试听片段”的会话级歌曲ID，格式为“pageSessionId|songId”，避免跨页重复弹
   private notifiedTryPlayKey: string = ''
   // 每次进入播放页递增的会话ID，歌曲切换时沿用
   private pageSessionId: number = 0
-
   // 已提示过“试听片段”的歌曲ID，避免同一首试听歌曲重复弹Toast
   private notifiedTryPlaySongId: string = ''
-
   // 播放模式顺序（用于循环切换）
   private readonly modeOrder: PlayerEnums.Mode[] = [
     PlayerEnums.Mode.ORDER,
@@ -105,7 +93,6 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
     PlayerEnums.Mode.RANDOM,
     PlayerEnums.Mode.ONE_NOT_REPEAT
   ]
-
   // 音质展示顺序
   private readonly qualityOrder: number[] = [
     PlayerEnums.Quality.STANDARD,
@@ -123,8 +110,9 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
   ]
 
   constructor() {
-    this.preferSongQuality = OpenApiSdk.playerApi!.getPreferSongQuality();
+    this.preferSongQuality = OpenApiSdk.playerApi?.getPreferSongQuality() ?? PlayerEnums.Quality.HQ;
   }
+
   /**
    * 注册播放器事件监听和进度回调
    */
@@ -136,6 +124,7 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
     this.initFromPlayerApi()
     this.registerEvents()
   }
+
   /**
    * 从 SDK 初始化当前状态快照
    */
@@ -150,6 +139,7 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
     this.refreshCurrentQuality()
     MLog.i(TAG, `init: song=${this.currentSong?.getSongName()}, mode=${this.currentMode}`)
   }
+
   /**
    * 注册播放器事件监听和进度回调
    */
@@ -158,6 +148,7 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
     OpenApiSdk.playerApi?.registerProgressChangedListener(this)
     OpenApiSdk.playerApi?.addOnPlayerErrorListener(this)
   }
+
   /**
    * 注销所有事件监听
    * 在页面 aboutToDisappear 时调用，防止内存泄漏
@@ -171,8 +162,8 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
   onEvent(event: PlayerEvent.Event, arg: Map<PlayerEvent.Key, Object>): void {
     switch (event) {
       case PlayerEvent.Event.API_EVENT_PLAY_SONG_CHANGED: {
-        const curr = arg.get(PlayerEvent.Key.API_EVENT_KEY_PLAY_SONG) as ISongInfo | undefined
-        if (curr !== undefined) {
+        const curr = OpenApiSdk.playerApi?.getCurrentSongInfo() ?? null;
+        if (curr) {
           this.currentSong = curr
           this.curSentence = ''
           this.seekPosition = -1
@@ -195,10 +186,10 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
       }
 
       case PlayerEvent.Event.API_EVENT_PLAY_LIST_CHANGED: {
-        const playList = OpenApiSdk.playerApi!.getPlayList() ?? [];
+        const playList = OpenApiSdk.playerApi?.getPlayList() ?? [];
         this.songList = playList;
         this.selectedList = new Array<boolean>(playList.length).fill(false);
-        this.currentSong = OpenApiSdk.playerApi!.getCurrentSongInfo();
+        this.currentSong = OpenApiSdk.playerApi?.getCurrentSongInfo() ?? null;
         this.checkLaunchAutoPlay();
         break;
       }
@@ -448,6 +439,7 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
   }
 
   items: ISoundEffectItem[] = [];
+
   getSoundEffect(): void {
     OpenApiSdk.openApi?.commonConfigApi.fetchSoundEffectConfig().then((res) => {
       if (res.isSuccess() && res.data && res.data.length > 0) {
@@ -477,6 +469,7 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
   prev(): void {
     OpenApiSdk.playerApi?.prev()
   }
+
   /** Seek到指定位置并发起播放 */
   seekTo(positionMs: number): void {
     this.seekPosition = positionMs
@@ -603,6 +596,7 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
       this.isFavorite = hot !== null && hot !== undefined && hot === 1
     }
   }
+
   /**
    * 如果是试听歌曲且未提示过，则弹“正在播放试听片段”Toast
    * 以“pageSessionId|songId”作为去重 key，同一会话内同一首试听歌曲只弹一次
@@ -622,6 +616,7 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
     this.notifiedTryPlayKey = key
     ToastUtil.show('正在播放试听片段')
   }
+
   /**
    * 进入播放页时调用，重置会话内试听提示去重记录
    * 使本页内切到的第一首试听歌曲一定会提示一次
@@ -649,6 +644,7 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
       MLog.e(TAG, `refreshCurrentQuality error: ${err.message}`)
     })
   }
+
   /**
    * 判断歌曲是否支持指定音质
    * 优先使用 SDK 的 getSongHasQuality，若不可用则降级为 ISongInfo 的 hasQuality* 方法
@@ -725,6 +721,7 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
         return `音质${quality}`
     }
   }
+
   /**
    * 根据播放状态更新状态文本
    */
@@ -769,7 +766,7 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
 
   private resetPlayProgress() {
     this.seekPosition = -1
-    this.playPosition= 0
+    this.playPosition = 0
   }
 
   private convertErrorCode(code: number): string {
@@ -803,6 +800,7 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
         return `ret=$code,${InsightUtil.convertErrorCode(code)}`;
     }
   }
+
   /**
    * 构建音质条目显示名称
    * 格式：音质名 + 文件大小 + 权限标签 + 试听标签

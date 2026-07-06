@@ -15,6 +15,7 @@ const TAG: string = 'LoginButtonAreaView'
  * 微信 AppID，由接入方配置。
  */
 const WX_APP_ID: string = 'wx5aa333606550dfd5'
+
 /**
  * 登录按钮区域：
  * - 未登录：显示多种登录方式按钮网格
@@ -34,7 +35,6 @@ export struct LoginButtonAreaView {
     builder: OpenIdLoginDialog(),
     alignment: DialogAlignment.Center
   })
-
   // 登录方式列表
   private readonly loginMethods: string[] =
     ['扫码登录', 'QQ登录', '微信登录', 'QQ音乐登录', '手机登录', 'OpenID登录', '第三方登录', 'token登录']
@@ -73,7 +73,12 @@ export struct LoginButtonAreaView {
         .backgroundColor(Color.Transparent)
         .border({ width: 1, color: Color.Black })
         .borderRadius(8)
-        .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+        .padding({
+          left: 12,
+          right: 12,
+          top: 6,
+          bottom: 6
+        })
         .onClick(() => {
           this.viewModel.logout()
           this.homeViewModel.refreshAfterLogin()
@@ -86,7 +91,12 @@ export struct LoginButtonAreaView {
         .backgroundColor(Color.Transparent)
         .border({ width: 1, color: Color.Black })
         .borderRadius(8)
-        .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+        .padding({
+          left: 12,
+          right: 12,
+          top: 6,
+          bottom: 6
+        })
         .onClick(() => {
           this.navController.push(RouteName.PARTNER_LOGIN_PAGE, new KeyValueParams('HarmonyDevice'))
         })
@@ -98,7 +108,12 @@ export struct LoginButtonAreaView {
         .backgroundColor(Color.Transparent)
         .border({ width: 1, color: Color.Black })
         .borderRadius(8)
-        .padding({ left: 12, right: 12, top: 6, bottom: 6 })
+        .padding({
+          left: 12,
+          right: 12,
+          top: 6,
+          bottom: 6
+        })
         .onClick(() => {
           ToastUtil.show("暂不支持token登录")
         })
@@ -121,7 +136,12 @@ export struct LoginButtonAreaView {
             .fontSize(11)
             .borderRadius(8)
             .border({ color: Color.Black, width: 1 })
-            .padding({ left: 8, right: 8, top: 6, bottom: 6 })
+            .padding({
+              left: 8,
+              right: 8,
+              top: 6,
+              bottom: 6
+            })
             .textAlign(TextAlign.Center)
             .width('100%')
             .onClick(() => {
@@ -147,7 +167,7 @@ export struct LoginButtonAreaView {
     } else if (item === 'QQ登录') {
       const abilityContext = AppUtil.abilityContext
       if (abilityContext) {
-        OpenApiSdk.loginApi?.loginManager.qqLoginWeb(abilityContext,
+        OpenApiSdk.loginApi?.qqLoginWeb(abilityContext,
           async (sus: boolean, msg: string | undefined) => {
             if (sus) {
               MLog.i(TAG, "QQ登录成功")
@@ -179,23 +199,17 @@ export struct LoginButtonAreaView {
       //   ToastUtil.show('UI上下文未初始化')
       // }
     } else if (item === 'QQ音乐登录') {
-      ToastUtil.show("暂不支持QQ音乐登录")
-      // const abilityContext = AppUtil.abilityContext
-      // if (abilityContext) {
-      //   OpenApiSdk.loginApi?.loginManager.qqMusicLogin(abilityContext,
-      //     async (sus: boolean, msg: string | undefined) => {
-      //       if (sus) {
-      //         MLog.i(TAG, "QQ音乐登录成功")
-      //         await this.viewModel.updateData()
-      //         this.homeViewModel.refreshAfterLogin()
-      //         return
-      //       }
-      //       MLog.e(TAG, "QQ音乐登录失败: " + msg)
-      //       ToastUtil.show("QQ音乐登录失败: " + (msg ?? ''))
-      //     })
-      // } else {
-      //   ToastUtil.show("上下文未初始化")
-      // }
+      OpenApiSdk.loginApi?.qqMusicLogin(
+        async (sus: boolean, msg: string | undefined) => {
+          if (sus) {
+            MLog.i(TAG, "QQ音乐登录成功")
+            await this.viewModel.updateData()
+            this.homeViewModel.refreshAfterLogin()
+            return
+          }
+          MLog.e(TAG, "QQ音乐登录失败: " + msg)
+          ToastUtil.show("QQ音乐登录失败: " + (msg ?? ''))
+        })
     } else if (item === '手机登录') {
       ToastUtil.show("暂不支持手机号登录")
       // this.phoneDialogController.open()

@@ -27,16 +27,15 @@ export struct SongCollectApiPanel {
     Stack() {
       Column() {
         List({ space: 0 }) {
-          ForEach(
-              this.homeViewModel.collectedSongList,
-            (item: ISongInfo, index: number) => {
+          Repeat<ISongInfo>(this.homeViewModel.collectedSongList)
+            .each((repeatItem: RepeatItem<ISongInfo>) => {
               ListItem() {
                 Column() {
                   SongListItemView({
                     host: this.host,
                     songList: this.homeViewModel.collectedSongList,
-                    song: item,
-                    index: index,
+                    song: repeatItem.item,
+                    index: repeatItem.index,
                     showIndex: false,
                     showTagRow: true,
                     showMvEntry: true,
@@ -49,14 +48,18 @@ export struct SongCollectApiPanel {
                   Blank().width('100%').height(0.4).backgroundColor(Color.Gray).opacity(0.2)
                 }.width('100%').height('100%')
               }.width('100%').height(80)
-            }
-            , (item: ISongInfo) => `${item.getSongId()?.toString()}_${new Date().getTime().toString()}`
-          )
+            })
+            .key((item: ISongInfo) => item.getSongId()?.toString() ?? '')
+            .virtualScroll({ totalCount: this.homeViewModel.collectedSongList.length })
         }
         .layoutWeight(1)
         .width('100%')
         .edgeEffect(EdgeEffect.Spring)
         .scrollBar(BarState.Off)
+        .cachedCount(5)
+        .onReachEnd(() => {
+          this.homeViewModel.fetchCollectedSong();
+        })
       }.width('100%').height('100%')
 
       if (this.isLoadingSong) {

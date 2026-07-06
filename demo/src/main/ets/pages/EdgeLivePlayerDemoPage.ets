@@ -1,11 +1,6 @@
 import {
-  ILiveInfoBean,
-  IEdgeVideoPlayListener,
-  LiveEvent,
-  LiveEventInfoAuth,
-  LiveEventWaitStart,
-  VideoPlayState,
-  VideoPlayError } from '@qqmusic/opisdk-entity'
+  ILiveInfoBean, IEdgeVideoPlayListener, LiveEvent, LiveEventInfoAuth, LiveEventWaitStart, VideoPlayState, VideoPlayError
+} from '@qqmusic/opisdk-entity'
 import { EdgeLivePlayer, QQMusicVideoPlayerManager } from '@qqmusic/opisdk-mvplayer'
 import { MLog } from '@qqmusic/opisdk-base'
 
@@ -14,6 +9,7 @@ import { MLog } from '@qqmusic/opisdk-base'
  */
 class LivePlayerCallback implements IEdgeVideoPlayListener {
   private page: EdgeLivePlayerDemoPage
+
   constructor(page: EdgeLivePlayerDemoPage) {
     this.page = page
   }
@@ -27,7 +23,7 @@ class LivePlayerCallback implements IEdgeVideoPlayListener {
     this.page.appendLog(`VideoRes: ${width}x${height}`)
   }
 
-  onError(error: VideoPlayError, data?: object): void {
+  onError(error: VideoPlayError, data?: Object): void {
     this.page.appendLog(`PlayerError: ${error} - ${data}`)
     this.page.playerStateText = 'ERROR'
   }
@@ -36,21 +32,17 @@ class LivePlayerCallback implements IEdgeVideoPlayListener {
 @ComponentV2
 export struct EdgeLivePlayerDemoPage {
   private TAG: string = 'EdgeLivePlayerDemoPage'
-
   // 核心业务播放器
   private edgeLivePlayer: EdgeLivePlayer | null = null
-
   // XComponent 控制器
   private xComponentController: XComponentController = new XComponentController()
-
   // --- UI 状态绑定 ---
   @Local surfaceId: string = ''
   @Local liveStatusText: string = '初始化...' // 无直播/直播中/直播结束
-  @Local playerStateText: string = 'IDLE'     // 播放器缓冲/播放/暂停状态
+  @Local playerStateText: string = 'IDLE' // 播放器缓冲/播放/暂停状态
   @Local liveTitle: string = ''
   @Local currentUrl: string = ''
   @Local logText: string = '' // 简易日志窗口
-
   // 倒计时显示
   @Local waitSeconds: number = 0
   @Local useAndroidMediaPlayer: boolean = true
@@ -124,157 +116,159 @@ export struct EdgeLivePlayerDemoPage {
     // 简单的UI日志滚动，保留最近10条
     const time = new Date().toLocaleTimeString()
     this.logText = `[${time}] ${msg}\n` + this.logText
-    if (this.logText.length > 500) this.logText = this.logText.substring(0, 500)
+    if (this.logText.length > 500) {
+      this.logText = this.logText.substring(0, 500)
+    }
   }
 
   build() {
     NavDestination() {
-    Column() {
-      // 标题
-      Text("EdgeLivePlayer 综合业务调试")
-        .fontSize(18)
-        .fontWeight(FontWeight.Bold)
-        .padding(10)
-        .backgroundColor('#f0f0f0')
-        .width('100%')
-
-      // --- 视频区 ---
-      Stack() {
-        XComponent({
-          id: 'xcomponent_edge_live',
-          type: XComponentType.SURFACE,
-          controller: this.xComponentController
-        })
-          .onLoad(() => {
-            this.surfaceId = this.xComponentController.getXComponentSurfaceId()
-            this.appendLog(`SurfaceCreated: ${this.surfaceId}`)
-            // 关键：Surface 准备好后传给 Player
-            if (this.edgeLivePlayer) {
-              this.edgeLivePlayer.setSurface(this.surfaceId)
-            }
-          })
-          .width('100%')
-          .height('100%')
-          .backgroundColor(Color.Black)
-
-        // 倒计时覆盖层
-        if (this.waitSeconds > 0) {
-          Column() {
-            Text("距离开播还有").fontColor(Color.White)
-            Text(`${this.waitSeconds}`).fontSize(40).fontColor(Color.White).fontWeight(FontWeight.Bold)
-            Text("秒").fontColor(Color.White)
-          }
-          .backgroundColor('#88000000')
-          .padding(20)
-          .borderRadius(10)
-        }
-      }
-      .width('100%')
-      .height(220)
-
-      // --- 信息区 ---
-      Column({ space: 5 }) {
-        Text(`直播间: ${this.liveTitle}`).fontWeight(FontWeight.Bold)
-        Text(`业务状态: ${this.liveStatusText}`).fontColor(Color.Blue)
-        Text(`播放器状态: ${this.playerStateText}`).fontColor(this.playerStateText === 'STARTED' ? Color.Green : Color.Red)
-        Text(`当前流Res: ${this.currentUrl}`).fontSize(10).fontColor(Color.Gray).maxLines(1).textOverflow({overflow: TextOverflow.Ellipsis})
-        Text(`是否使用系统播放器: ${this.useAndroidMediaPlayer}`).fontSize(10).fontColor(Color.Gray).maxLines(1).textOverflow({overflow: TextOverflow.Ellipsis})
-      }
-      .alignItems(HorizontalAlign.Start)
-      .width('100%')
-      .padding(10)
-      .backgroundColor(Color.White)
-
-      // --- 控制区 ---
-      Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceAround }) {
-        Button("loadWithLiveId")
-          .onClick(() => {
-            if (!this.surfaceId) {
-              this.appendLog("错误: Surface未就绪")
-              return
-            }
-            this.edgeLivePlayer?.loadWithLiveId(10000398)
-          })
-
-        Button("pause")
-          .onClick(() => {
-            if (!this.surfaceId) {
-              this.appendLog("错误: Surface未就绪")
-              return
-            }
-            this.edgeLivePlayer?.pause()
-          })
-
-        Button("play")
-          .onClick(() => {
-            if (!this.surfaceId) {
-              this.appendLog("错误: Surface未就绪")
-              return
-            }
-            this.edgeLivePlayer?.play()
-          })
-
-        Button("reload")
-          .onClick(() => {
-            if (!this.surfaceId) {
-              this.appendLog("错误: Surface未就绪")
-              return
-            }
-            this.edgeLivePlayer?.reload()
-          })
-
-        Button("switchStream")
-          .onClick(() => {
-            if (!this.surfaceId) {
-              this.appendLog("错误: Surface未就绪")
-              return
-            }
-            this.edgeLivePlayer?.switchStream(2688)
-          })
-
-        Button("switchCamera")
-          .onClick(() => {
-            this.edgeLivePlayer?.switchCamera(486, 2688)
-          })
-
-        Button("useAndroidMediaPlayer")
-          .onClick(() => {
-            this.useAndroidMediaPlayer = !this.useAndroidMediaPlayer
-            this.edgeLivePlayer?.setUseSystemPlayer(this.useAndroidMediaPlayer)
-          })
-
-        Button("refreshCameraOrStream")
-          .onClick(() => {
-            this.edgeLivePlayer?.refreshCameraOrStream(486, 2687)
-          })
-
-        Button("销毁/重置")
-          .onClick(() => {
-            this.edgeLivePlayer?.destroy()
-            this.appendLog("已销毁，请退出页面或重新进入")
-          })
-      }
-      .padding(10)
-
-      // --- 日志区 ---
-      Text("运行日志:")
-        .width('100%')
-        .padding({ left: 10, top: 10 })
-        .fontSize(12)
-
-      Scroll() {
-        Text(this.logText)
-          .fontSize(10)
-          .fontColor('#333333')
+      Column() {
+        // 标题
+        Text("EdgeLivePlayer 综合业务调试")
+          .fontSize(18)
+          .fontWeight(FontWeight.Bold)
           .padding(10)
+          .backgroundColor('#f0f0f0')
+          .width('100%')
+
+        // --- 视频区 ---
+        Stack() {
+          XComponent({
+            id: 'xcomponent_edge_live',
+            type: XComponentType.SURFACE,
+            controller: this.xComponentController
+          })
+            .onLoad(() => {
+              this.surfaceId = this.xComponentController.getXComponentSurfaceId()
+              this.appendLog(`SurfaceCreated: ${this.surfaceId}`)
+              // 关键：Surface 准备好后传给 Player
+              if (this.edgeLivePlayer) {
+                this.edgeLivePlayer.setSurface(this.surfaceId)
+              }
+            })
+            .width('100%')
+            .height('100%')
+            .backgroundColor(Color.Black)
+
+          // 倒计时覆盖层
+          if (this.waitSeconds > 0) {
+            Column() {
+              Text("距离开播还有").fontColor(Color.White)
+              Text(`${this.waitSeconds}`).fontSize(40).fontColor(Color.White).fontWeight(FontWeight.Bold)
+              Text("秒").fontColor(Color.White)
+            }
+            .backgroundColor('#88000000')
+            .padding(20)
+            .borderRadius(10)
+          }
+        }
+        .width('100%')
+        .height(220)
+
+        // --- 信息区 ---
+        Column({ space: 5 }) {
+          Text(`直播间: ${this.liveTitle}`).fontWeight(FontWeight.Bold)
+          Text(`业务状态: ${this.liveStatusText}`).fontColor(Color.Blue)
+          Text(`播放器状态: ${this.playerStateText}`).fontColor(this.playerStateText === 'STARTED' ? Color.Green : Color.Red)
+          Text(`当前流Res: ${this.currentUrl}`).fontSize(10).fontColor(Color.Gray).maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis })
+          Text(`是否使用系统播放器: ${this.useAndroidMediaPlayer}`).fontSize(10).fontColor(Color.Gray).maxLines(1).textOverflow({ overflow: TextOverflow.Ellipsis })
+        }
+        .alignItems(HorizontalAlign.Start)
+        .width('100%')
+        .padding(10)
+        .backgroundColor(Color.White)
+
+        // --- 控制区 ---
+        Flex({ wrap: FlexWrap.Wrap, justifyContent: FlexAlign.SpaceAround }) {
+          Button("loadWithLiveId")
+            .onClick(() => {
+              if (!this.surfaceId) {
+                this.appendLog("错误: Surface未就绪")
+                return
+              }
+              this.edgeLivePlayer?.loadWithLiveId(10000398)
+            })
+
+          Button("pause")
+            .onClick(() => {
+              if (!this.surfaceId) {
+                this.appendLog("错误: Surface未就绪")
+                return
+              }
+              this.edgeLivePlayer?.pause()
+            })
+
+          Button("play")
+            .onClick(() => {
+              if (!this.surfaceId) {
+                this.appendLog("错误: Surface未就绪")
+                return
+              }
+              this.edgeLivePlayer?.play()
+            })
+
+          Button("reload")
+            .onClick(() => {
+              if (!this.surfaceId) {
+                this.appendLog("错误: Surface未就绪")
+                return
+              }
+              this.edgeLivePlayer?.reload()
+            })
+
+          Button("switchStream")
+            .onClick(() => {
+              if (!this.surfaceId) {
+                this.appendLog("错误: Surface未就绪")
+                return
+              }
+              this.edgeLivePlayer?.switchStream(2688)
+            })
+
+          Button("switchCamera")
+            .onClick(() => {
+              this.edgeLivePlayer?.switchCamera(486, 2688)
+            })
+
+          Button("useAndroidMediaPlayer")
+            .onClick(() => {
+              this.useAndroidMediaPlayer = !this.useAndroidMediaPlayer
+              this.edgeLivePlayer?.setUseSystemPlayer(this.useAndroidMediaPlayer)
+            })
+
+          Button("refreshCameraOrStream")
+            .onClick(() => {
+              this.edgeLivePlayer?.refreshCameraOrStream(486, 2687)
+            })
+
+          Button("销毁/重置")
+            .onClick(() => {
+              this.edgeLivePlayer?.destroy()
+              this.appendLog("已销毁，请退出页面或重新进入")
+            })
+        }
+        .padding(10)
+
+        // --- 日志区 ---
+        Text("运行日志:")
+          .width('100%')
+          .padding({ left: 10, top: 10 })
+          .fontSize(12)
+
+        Scroll() {
+          Text(this.logText)
+            .fontSize(10)
+            .fontColor('#333333')
+            .padding(10)
+        }
+        .layoutWeight(1) // 占满剩余空间
+        .width('100%')
+        .backgroundColor('#eeeeee')
+        .align(Alignment.TopStart)
       }
-      .layoutWeight(1) // 占满剩余空间
-      .width('100%')
-      .backgroundColor('#eeeeee')
-      .align(Alignment.TopStart)
-    }
-    .height('100%')
-    .backgroundColor('#ffffff')
+      .height('100%')
+      .backgroundColor('#ffffff')
     }
     .hideTitleBar(true)
   }

@@ -180,7 +180,7 @@ export struct AboutPage {
 
           // openId / 设备Id
           CopyableItem({
-            title: (OpenApiSdk.loginApi?.loginManager?.hasLogin() ? 'openId' : '设备id') + '(日志上报Id)',
+            title: (OpenApiSdk.loginApi?.hasLogin() ? 'openId' : '设备id') + '(日志上报Id)',
             content: this.openIdOrDeviceId
           })
 

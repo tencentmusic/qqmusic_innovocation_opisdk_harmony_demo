@@ -14,10 +14,7 @@ import { NavController } from '../../nav/NavController';
 import { ToastUtil } from '../../utils/ToastUtil';
 import { AppUtil } from '../../utils/AppUtil';
 import {
-  CashierCreateOrderItem,
-  CashierCreateOrderParams,
-  GetVipGuideConfigParam,
-  MusicSkillSlotItem
+  CashierCreateOrderItem, CashierCreateOrderParams, GetVipGuideConfigParam, MusicSkillSlotItem
 } from '@qqmusic/opisdk-openapi';
 import { RecentPlayType } from '@qqmusic/opisdk-entity';
 import { ISongInfo } from '@qqmusic/opisdk-qmutils'
@@ -31,24 +28,20 @@ export function OpenApiDemoPageBuilder(args?: Object) {
 export struct OpenApiDemoPage {
   @Consumer('navController') navController: NavController = NavController.getInstance()
   @Param args: object | undefined = undefined;
-
   // ========== 状态变量 ==========
   @Local displayText: string = ''
   @Local loginInfo: boolean = false
   @Local inputKey: string = ''
   @Local showDebugButton: boolean = false
-
   // 方法选择相关
   @Local apiMethod: string = 'searchSong'
   @Local resultMeans: string[] = []
   @Local apiMeans: string[] = []
   private select: number | number[] = 0
-
   // 参数相关
   @Local apiMeansList: Map<string, InterfaceParams> = new Map()
   @Local currentValues: InterfaceParams | null = null
   @Local params: string[] = ['', '', '', '', '']
-
   // 一键测试相关
   private createFolderId: string = ''
   private createFolderSuccess: boolean = false
@@ -57,7 +50,6 @@ export struct OpenApiDemoPage {
   private orderId: string = ''
   private displayMode: boolean = true
   private errorOpiNameAndMsg: string[] = []
-
   // 方法名到 API 调用的映射
   private methodNameToBlock: Map<string, (param: InterfaceParams) => void> = new Map()
 
@@ -131,7 +123,7 @@ export struct OpenApiDemoPage {
     }
 
     // 初始化登录状态
-    this.loginInfo = OpenApiSdk.loginApi?.loginManager.hasLogin() ?? false
+    this.loginInfo = OpenApiSdk.loginApi?.hasLogin() ?? false
 
     // 初始化方法列表
     this.initMethodNameList()
@@ -1367,6 +1359,7 @@ export struct OpenApiDemoPage {
       this.testMusicSkill(param, 'musicSkillWithSlots')
     })
   }
+
   // ========== 辅助方法 ==========
 
   /**

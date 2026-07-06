@@ -1,5 +1,14 @@
-import { OpenApiSdk, MLog } from '@qqmusic/opisdk-base'
-import { ICategory, IBanner, IFolder, IPlayParam, GetMVRecommendCmd, AreaID, CategoryType, OpenApiResponse, IArea,
+import { OpenApiSdk, MLog, BusinessEventHandler, globalEventHandler } from '@qqmusic/opisdk-base'
+import {
+  ICategory,
+  IBanner,
+  IFolder,
+  IPlayParam,
+  GetMVRecommendCmd,
+  AreaID,
+  CategoryType,
+  OpenApiResponse,
+  IArea,
   IMediaResDetail,
   IAlbum,
   IOtherPlatListeningList,
@@ -7,14 +16,17 @@ import { ICategory, IBanner, IFolder, IPlayParam, GetMVRecommendCmd, AreaID, Cat
   AreaShelfType,
   IShelf,
   IHomepageRecommendation,
-  ICard} from '@qqmusic/opisdk-entity'
+  ICard,
+  BaseBusinessEvent,
+  LoginEvent
+} from '@qqmusic/opisdk-entity'
 import { HomepageRecommendation } from '@qqmusic/opisdk-openapi'
 import { ISongInfo, ISinger, MusicListType, PlayError } from '@qqmusic/opisdk-qmutils'
 
 const TAG = 'HomeViewModel'
 
 @ObservedV2
-export class HomeViewModel {
+export class HomeViewModel implements BusinessEventHandler {
   // 首页分类歌单
   @Trace public categories: ICategory[] = []
   // 场景歌单分类
@@ -58,9 +70,43 @@ export class HomeViewModel {
       return
     }
     this.isInitialized = true
+    globalEventHandler.registerHandler(this)
     this.fetchCategory()
     this.fetchBannerConfig()
     this.fetchHomeRecommendation()
+  }
+
+  /**
+   * 在页面销毁时调用，移除全局事件监听，避免内存泄漏
+   */
+  onDestroy(): void {
+    globalEventHandler.removeHandler(this)
+  }
+
+  handle(event: BaseBusinessEvent): void {
+    if (event.tag === LoginEvent.EventTag) {
+      switch (event.code) {
+        case LoginEvent.MusicUserLogIn:
+        case LoginEvent.MusicAccountAutoLoginIn:
+          MLog.i(TAG, `handle login event: ${event.code}, refreshing home data`)
+          this.refreshAfterLogin()
+          break
+        case LoginEvent.UserVipInfoUpdate:
+          MLog.i(TAG, `handle vip update event: ${event.code}, re-fetching home data`)
+          this.refreshAfterLogin()
+          break
+        case LoginEvent.MusicUserLogOut:
+        case LoginEvent.UserDeauthorization:
+        case LoginEvent.AcountDeregisterPending:
+        case LoginEvent.AcountDeregisterDone:
+        case LoginEvent.UserAccountLoginExpired:
+          MLog.i(TAG, `handle logout event: ${event.code}, clearing home data`)
+          this.clearAllUserData()
+          break
+        default:
+          break
+      }
+    }
   }
 
   /**
@@ -398,19 +444,81 @@ export class HomeViewModel {
   }
 
   /**
-   * 清除请求状态
-   * 在登录/登出操作后调用，重置加载状态以便重新拉取数据
+   * 清除请求状态（保留数据，仅重置加载标记）
+   * 用于轻量级刷新场景
    */
-  clearRequestState(): void {
+  private clearRequestState(): void {
     this.sceneCategoriesLoaded = false
     this.cleanAreaData()
   }
 
   /**
-   * 登录/登出后刷新首页数据
+   * 清除所有需要登录态的用户数据
+   * 在登出/注销/登录过期时调用
    */
-  async refreshAfterLogin() {
+  private clearAllUserData(): void {
+    // 清除首页需要登录态的数据
+    this.mineFolders = []
+    // 清除收藏相关数据
+    this.collectedSongList = []
+    this.collectedSongPassBack = ''
+    this.collectedSongListHasMore = true
+    this.isLoadingCollectedSong = false
+    this.collectedFolderList = []
+    this.collectedMvList = []
+    this.collectedMvPage = 0
+    this.collectedAlbumList = []
+    this.collectedAlbumPage = 0
+    this.collectedVoicedSongList = []
+    this.collectedVoicedSongPage = 0
+    this.collectedVoicedAlbumList = []
+    this.collectedVoicedAlbumPage = 0
+    this.voicedLongAlbumFavList = []
+    this.voicedLongAlbumPage = 0
+    this.longAudioFavList = []
+    this.favLongAudioPage = 0
+    this.collectedSingerList = []
+    this.collectedSingerPage = 0
+    // 清除最近播放数据
+    this.recentSongList = []
+    this.recentSongUpdateTime = 0
+    this.recentAlbumList = []
+    this.recentAlbumUpdateTime = 0
+    this.recentFolderList = []
+    this.recentFolderUpdateTime = 0
+    this.recentLongAudioList = []
+    this.recentLongAudioUpdateTime = 0
+    this.recentMvList = []
+    this.recentMvUpdateTime = 0
+    // 清除已购数据
+    this.albumBuyRecordList = []
+    this.albumBuyRecordPage = 0
+    this.songBuyRecordList = []
+    this.songBuyRecordPage = 0
+    this.longAudioBuyRecordList = []
+    this.longAudioBuyRecordPage = 0
+    // 清除自建歌单和其他端数据
+    this.personalFolderList = []
+    this.otherPlatListeningList = undefined
+    // 重置场景歌单加载标记
+    this.sceneCategoriesLoaded = false
+    this.cleanAreaData()
+  }
+
+  /**
+   * 登录后刷新首页数据
+   * 重新拉取所有需要登录态的首页接口
+   */
+  async refreshAfterLogin(): Promise<void> {
     this.clearRequestState()
+    // 重新拉取首页核心数据（登录态变化可能影响推荐内容）
+    await this.fetchCategory()
+    await this.fetchBannerConfig()
+    await this.fetchHomeRecommendation()
+    // 登录后拉取个人歌单
+    await this.fetchMineFolder()
+    // 登录后刷新所有 API 面板数据
+    this.refreshAllApiData()
   }
 
   smartSearchKey(key: string, callback: (list: string[]) => void) {
@@ -427,10 +535,16 @@ export class HomeViewModel {
   @Trace public collectedSongList: ISongInfo[] = []
   @Trace public collectedSongListHasMore: boolean = true;
   private collectedSongPassBack = '';
+  /** 是否正在加载收藏歌曲（防止重复请求） */
+  private isLoadingCollectedSong: boolean = false;
 
   fetchCollectedSong(): void {
-    if (this.collectedSongListHasMore) {
-      OpenApiSdk.openApi?.folderApi.fetchSongOfMyLikeFolder(this.collectedSongPassBack).then((result) => {
+    if (!this.collectedSongListHasMore || this.isLoadingCollectedSong) {
+      return;
+    }
+    this.isLoadingCollectedSong = true;
+    OpenApiSdk.openApi?.folderApi.fetchSongOfMyLikeFolder(this.collectedSongPassBack, 100)
+      .then((result) => {
         if (result.isSuccess()) {
           const songList = result.data;
           if (songList && songList.length > 0) {
@@ -440,10 +554,13 @@ export class HomeViewModel {
           this.collectedSongListHasMore = result.hasMore;
           MLog.i(TAG, `fetchCollectedSongList success, count: ${this.collectedSongList.length}`);
         }
-      }).catch((e: Error) => {
+      })
+      .catch((e: Error) => {
         MLog.e(TAG, `fetchCollectedSongList error: ${JSON.stringify(e)}`);
+      })
+      .finally(() => {
+        this.isLoadingCollectedSong = false;
       });
-    }
   }
 
   /**
@@ -735,8 +852,8 @@ export class HomeViewModel {
   /**
    * 其他端播放列表
    */
-  fetchOtherPlatListeningList(){
-    OpenApiSdk.openApi?.recentPlayApi.fetchOtherPlatListeningList().then((result)=>{
+  fetchOtherPlatListeningList() {
+    OpenApiSdk.openApi?.recentPlayApi.fetchOtherPlatListeningList().then((result) => {
       this.otherPlatListeningList = result.data;
     })
   }
@@ -902,6 +1019,7 @@ export class HomeViewModel {
     this.collectedSongList = [];
     this.collectedSongPassBack = '';
     this.collectedSongListHasMore = true;
+    this.isLoadingCollectedSong = false;
     this.fetchCollectedSong();
   }
 

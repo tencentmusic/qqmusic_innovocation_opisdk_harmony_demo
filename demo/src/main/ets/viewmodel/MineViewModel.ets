@@ -84,8 +84,10 @@ export class MineViewModel {
     }
   }
 
-  // 推出登录时清空数据
-  private clearData() {
+  /**
+   * 退出登录时清空数据
+   */
+  public clearData(): void {
     this.userInfo = null
     this.loginInfo = null
     this.userVipInfo = null
@@ -104,7 +106,7 @@ export class MineViewModel {
 
     try {
       // 获取登录态信息
-      const currentLoginInfo = OpenApiSdk.loginApi?.loginManager.openIdInfo ??
+      const currentLoginInfo = OpenApiSdk.loginApi?.getOpenIdInfo() ??
         MMKVHelper.getObject(MMKVHelper.getCommonMMKV(), PreferencesConstants.KEY_OPEN_INFO, null)
 
       // 如果当前没有登录态，说明在异步过程中已经登出，不再更新 UI
@@ -183,7 +185,7 @@ export class MineViewModel {
    * 用于异步操作返回后的登录态校验，防止登出后异步数据覆盖 UI
    */
   private isStillLoggedIn(): boolean {
-    const currentLoginInfo = OpenApiSdk.loginApi?.loginManager.openIdInfo
+    const currentLoginInfo = OpenApiSdk.loginApi?.getOpenIdInfo()
     return currentLoginInfo !== null && currentLoginInfo !== undefined && currentLoginInfo.openId.length > 0
   }
 
@@ -270,7 +272,7 @@ export class MineViewModel {
       ret.push("联合会员")
     }
 
-    if (OpenApiSdk.loginApi?.loginManager.isQQMusicLoginUserSame()) {
+    if (OpenApiSdk.loginApi?.isQQMusicLoginUserSame()) {
       ret.push('Q音手机端登录相同账号')
     }
 
@@ -378,6 +380,6 @@ export class MineViewModel {
 
   public logout() {
     MLog.i(this.TAG, "logout")
-    OpenApiSdk.loginApi?.loginManager.logout()
+    OpenApiSdk.loginApi?.logout()
   }
 }

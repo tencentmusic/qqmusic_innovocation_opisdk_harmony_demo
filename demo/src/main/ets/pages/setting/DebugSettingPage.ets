@@ -55,7 +55,6 @@ export struct DebugSettingPage {
   // @Local curWnsEnv: string = Global.isWnsTestEnv ? ENV_TEST : ENV_RELEASE;
   @Local curDomain: string = DOMAIN_MAP[Global.curDomain] ?? '正式域名';
   @Local curDevopsName: string = SPUtils.getString('devopsName', 'DevopsBase');
-
   // 开关状态
   @Local isEnableLog: boolean = SPUtils.getBool('enableLog', true);
   @Local enableHttpDns: boolean = SPUtils.getBool('enableHttpDns', true);
@@ -63,7 +62,6 @@ export struct DebugSettingPage {
   @Local useIpc: boolean = false;
   @Local tryPauseFirst: boolean = SPUtils.getBool('tryPauseFirst', false);
   @Local curAppCheckMode: string = APP_CHECK_MODE_LIST[BaseFuncProxy.getAppCheckMode()];
-
   // 对话框控制器
   private domainDialog: CustomDialogController | null = null;
   private devopsDialog: CustomDialogController | null = null;
@@ -71,13 +69,16 @@ export struct DebugSettingPage {
   private sessionActivityDialog: CustomDialogController | null = null;
   private loginTypeDialog: CustomDialogController | null = null;
   private appCheckModeDialog: CustomDialogController | null = null;
-
   // ViewModel
   private viewModel: DebugViewModel = new DebugViewModel();
 
   private initCurEnv(): string {
-    if (Global.isTestEnv) return ENV_TEST;
-    if (Global.isPreReleaseEnv) return ENV_PRE_RELEASE;
+    if (Global.isTestEnv) {
+      return ENV_TEST;
+    }
+    if (Global.isPreReleaseEnv) {
+      return ENV_PRE_RELEASE;
+    }
     return ENV_RELEASE;
   }
 
@@ -179,11 +180,11 @@ export struct DebugSettingPage {
       ToastUtil.show('loginApi 未初始化');
       return;
     }
-    if (!loginApi.loginManager.hasLogin()) {
+    if (!loginApi.hasLogin()) {
       ToastUtil.show('未登录');
       return;
     }
-    const source = loginApi.loginManager.openIdInfo;
+    const source = loginApi.getOpenIdInfo();
     if (!source) {
       ToastUtil.show('未登录');
       return;
@@ -204,7 +205,7 @@ export struct DebugSettingPage {
     expiredInfo.openAppId = source.openAppId;
     expiredInfo.accType = source.accType;
 
-    loginApi.loginManager.updateOpenIdInfo(expiredInfo);
+    loginApi.updateOpenIdInfo(expiredInfo);
     ToastUtil.show(`已设置 ${authType.desc} 过期小票`);
 
     // 触发一次网络请求验证小票过期效果
@@ -376,7 +377,7 @@ export struct DebugSettingPage {
             // 清空大票
             SingleItem({
               title: '点击清空大票', item: '', onItemClick: () => {
-                const source = OpenApiSdk.loginApi?.loginManager.openIdInfo;
+                const source = OpenApiSdk.loginApi?.getOpenIdInfo();
                 if (source) {
                   const openIdInfo = new OpenIdInfo(
                     source.expireTime,
@@ -392,9 +393,9 @@ export struct DebugSettingPage {
                   openIdInfo.musicId = source.musicId;
                   openIdInfo.openAppId = source.openAppId;
                   openIdInfo.accType = source.accType;
-                  OpenApiSdk.loginApi?.loginManager.updateOpenIdInfo(openIdInfo, openIdInfo.type ?? AuthType.UNKNOWN);
+                  OpenApiSdk.loginApi?.updateOpenIdInfo(openIdInfo, openIdInfo.type ?? AuthType.UNKNOWN);
                 }
-                ToastUtil.show(`操作成功，refreshToken=${OpenApiSdk.loginApi?.loginManager.openIdInfo?.refreshToken}`);
+                ToastUtil.show(`操作成功，refreshToken=${OpenApiSdk.loginApi?.getOpenIdInfo()?.refreshToken}`);
               }
             })
 

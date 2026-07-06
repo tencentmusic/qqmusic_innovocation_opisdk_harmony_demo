@@ -65,18 +65,20 @@ export struct OpiQRCodePage {
     }
 
     const safetyTimer = setTimeout(() => {
-      if(this.isLoading) {
+      if (this.isLoading) {
         MLog.e(this.TAG, "OpiQRCodePage: UI 兜底超时触发");
         this.showTips("加载超时，请点击刷新", true);
         this.isLoading = false;
       }
     }, 8000);
 
-    OpenApiSdk.loginApi.loginManager.getLoginQrCode(this.devName).then((data) => {
+    OpenApiSdk.loginApi.getLoginQrCode(this.devName).then((data) => {
       clearTimeout(safetyTimer);
       MLog.i(this.TAG, `OpiQRCodePage: 收到回调 result=${data.isSuccess()}`);
 
-      if (this.isDestroyed) return;
+      if (this.isDestroyed) {
+        return;
+      }
       this.isLoading = false
 
       if (data.isSuccess() && data.data) {
@@ -91,7 +93,6 @@ export struct OpiQRCodePage {
     })
   }
 
-
   showQrCodeLogic() {
     this.showQrCode = true
     this.showRefreshBtn = false
@@ -105,12 +106,14 @@ export struct OpiQRCodePage {
 
     MLog.i(this.TAG, `OpiQRCodePage: 开始轮询 authCode=${pollAuthCode}`)
 
-    OpenApiSdk.loginApi?.loginManager.pollQrCodeLoginResult(pollAuthCode).then(async (res) => {
-      if (this.isDestroyed) return;
+    OpenApiSdk.loginApi?.pollQrCodeLoginResult(pollAuthCode).then(async (res) => {
+      if (this.isDestroyed) {
+        return;
+      }
 
       if (res.isSuccess()) {
         MLog.i(this.TAG, `OpiQRCodePage: 扫码绑定成功, authCode=${res.data}`)
-        await OpenApiSdk.loginApi?.loginManager.onGetAuthCode(AuthType.QRCode, res.data ?? '')
+        await OpenApiSdk.loginApi?.onGetAuthCode(AuthType.QRCode, res.data ?? '')
         ToastUtil.show("登录成功");
         this.navController.pop()
       } else {
@@ -150,86 +153,86 @@ export struct OpiQRCodePage {
 
   build() {
     NavDestination() {
-    Column() {
-      Row() {
-        Image($r('app.media.icon_back_placeholder'))
-          .width(26)
-          .height(26)
-          .margin({ left: 10, top: 10 })
-          .onClick(() => this.navController.pop())
-
-        Text('扫码登录')
-          .fontSize(20)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 16, top: 10 })
-          .layoutWeight(1)
-      }
-      .width('100%')
-      .height(56)
-      .alignItems(VerticalAlign.Top)
-
-      // 内容区
       Column() {
-        Text(this.tips)
-          .fontSize(16)
-          .fontColor('#333333')
-          .textAlign(TextAlign.Center)
-          .margin({ bottom: 15 })
+        Row() {
+          Image($r('app.media.icon_back_placeholder'))
+            .width(26)
+            .height(26)
+            .margin({ left: 10, top: 10 })
+            .onClick(() => this.navController.pop())
 
-        Stack() {
-          if (this.showQrCode && this.QRCodeUrl) {
-            QRCode(this.QRCodeUrl)
+          Text('扫码登录')
+            .fontSize(20)
+            .fontWeight(FontWeight.Medium)
+            .margin({ left: 16, top: 10 })
+            .layoutWeight(1)
+        }
+        .width('100%')
+        .height(56)
+        .alignItems(VerticalAlign.Top)
+
+        // 内容区
+        Column() {
+          Text(this.tips)
+            .fontSize(16)
+            .fontColor('#333333')
+            .textAlign(TextAlign.Center)
+            .margin({ bottom: 15 })
+
+          Stack() {
+            if (this.showQrCode && this.QRCodeUrl) {
+              QRCode(this.QRCodeUrl)
+                .width(300)
+                .height(300)
+                .backgroundColor('#FFFFFF')
+                .borderRadius(8)
+            } else {
+              Column() {
+                if (this.isLoading) {
+                  LoadingProgress()
+                    .width(40)
+                    .height(40)
+                    .color('#007DFF')
+                }
+                if (!this.isLoading && !this.showQrCode) {
+                  Image($r('app.media.startIcon'))
+                    .width(48)
+                    .height(48)
+                }
+              }
               .width(300)
               .height(300)
-              .backgroundColor('#FFFFFF')
+              .justifyContent(FlexAlign.Center)
+              .alignItems(HorizontalAlign.Center)
+              .backgroundColor('#F5F5F5')
               .borderRadius(8)
-          } else {
-            Column() {
-              if (this.isLoading) {
-                LoadingProgress()
-                  .width(40)
-                  .height(40)
-                  .color('#007DFF')
-              }
-              if (!this.isLoading && !this.showQrCode) {
-                Image($r('app.media.startIcon'))
-                  .width(48)
-                  .height(48)
-              }
             }
-            .width(300)
-            .height(300)
-            .justifyContent(FlexAlign.Center)
-            .alignItems(HorizontalAlign.Center)
-            .backgroundColor('#F5F5F5')
-            .borderRadius(8)
+          }
+          .width(300)
+          .height(300)
+
+          if (this.showRefreshBtn) {
+            Button('刷新', { type: ButtonType.Normal })
+              .width(120)
+              .height(40)
+              .fontSize(16)
+              .backgroundColor('#007DFF')
+              .fontColor(Color.White)
+              .margin({ top: 20 })
+              .onClick(() => {
+                this.startGetQrCode()
+              })
           }
         }
-        .width(300)
-        .height(300)
-
-        if (this.showRefreshBtn) {
-          Button('刷新', { type: ButtonType.Normal })
-            .width(120)
-            .height(40)
-            .fontSize(16)
-            .backgroundColor('#007DFF')
-            .fontColor(Color.White)
-            .margin({ top: 20 })
-            .onClick(() => {
-              this.startGetQrCode()
-            })
-        }
+        .width('100%')
+        .layoutWeight(1)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
       }
       .width('100%')
-      .layoutWeight(1)
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center)
-    }
-    .width('100%')
-    .height('100%')
-    .backgroundColor(Color.White)
-    .padding({ bottom: 40 })
+      .height('100%')
+      .backgroundColor(Color.White)
+      .padding({ bottom: 40 })
     }
     .hideTitleBar(true)
   }

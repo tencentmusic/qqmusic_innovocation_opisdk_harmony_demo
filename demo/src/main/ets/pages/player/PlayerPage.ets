@@ -207,12 +207,6 @@ export struct PlayerPage {
         .fontWeight(FontWeight.Bold)
         .layoutWeight(1)
         .textAlign(TextAlign.Center)
-
-      // 歌词切换按钮
-      Text('词')
-        .fontSize(16)
-        .fontColor('#666666')
-        .margin({ right: 16 })
     }
     .width('100%')
     .backgroundColor(Color.White)
