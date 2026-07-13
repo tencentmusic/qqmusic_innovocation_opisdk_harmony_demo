@@ -6,7 +6,6 @@
  * - 选择音频文件进行音频指纹匹配
  * - 显示匹配结果
  */
-import { NavController } from '../../nav/NavController';
 import { LocalMatchViewModel, MatchResult } from '../../viewmodel/setting/LocalMatchViewModel';
 import { IMatchLocalSongInfo } from '@qqmusic/opisdk-entity';
 import { picker } from '@kit.CoreFileKit';
@@ -15,7 +14,6 @@ import { ISongInfo } from '@qqmusic/opisdk-qmutils';
 
 @ComponentV2
 export struct LocalMatchPage {
-  @Consumer('navController') navController: NavController = NavController.getInstance()
   @Local viewModel: LocalMatchViewModel = new LocalMatchViewModel()
 
   // 手动输入状态
@@ -28,46 +26,26 @@ export struct LocalMatchPage {
 
   build() {
     NavDestination() {
-      Column() {
-        // 顶部导航栏
-        Row() {
-          Image($r('app.media.ic_back_dark'))
-            .width(44).height(44)
-            .onClick(() => this.navController.pop())
-          Text('本地歌曲匹配调试')
-            .fontSize(18)
-            .fontWeight(FontWeight.Medium)
-            .margin({ left: 8 })
+      Scroll() {
+        Column({ space: 12 }) {
+          // ========== 输入区域 ==========
+          this.buildInputSection()
+
+          // ========== 输出区域 ==========
+          this.buildOutputSection()
         }
         .width('100%')
-        .height(44)
-        .padding({ left: 16 })
-        .borderWidth({ bottom: 0.5 })
-        .borderColor('#36000000')
-
-        Scroll() {
-          Column({ space: 12 }) {
-            // ========== 输入区域 ==========
-            this.buildInputSection()
-
-            // ========== 输出区域 ==========
-            this.buildOutputSection()
-          }
-          .width('100%')
-          .padding(16)
-          .justifyContent(FlexAlign.Start)
-        }
-        .width('100%')
-        .layoutWeight(1)
-        .scrollBar(BarState.Off)
-        .edgeEffect(EdgeEffect.Spring)
-        .align(Alignment.Top)
+        .padding(16)
+        .justifyContent(FlexAlign.Start)
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#F5F5F5')
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.Spring)
+      .align(Alignment.Top)
     }
-    .hideTitleBar(true)
+    .title('本地歌曲匹配调试')
+    .backgroundColor('#F5F5F5')
   }
 
   /**
@@ -311,21 +289,21 @@ export struct LocalMatchPage {
       parts.push(`result: ${matched.result}`)
     }
     if (matched.songInfo) {
-      const song = matched.songInfo
+      const song = JSON.parse(JSON.stringify(matched.songInfo)) as Record<string, Object>
       const songParts: string[] = []
-      const songId = song.getSongId?.()
+      const songId = song['song_id'] as number
       if (songId && songId > 0) {
         songParts.push(`songId: ${songId}`)
       }
-      const songName = song.getSongName?.()
+      const songName = song['song_name'] as string
       if (songName) {
         songParts.push(`songName: ${songName}`)
       }
-      const singerName = song.getSingerName?.()
+      const singerName = song['singer_name'] as string
       if (singerName) {
         songParts.push(`singer: ${singerName}`)
       }
-      const albumName = song.getAlbumName?.()
+      const albumName = song['album_name'] as string
       if (albumName) {
         songParts.push(`album: ${albumName}`)
       }
@@ -340,20 +318,22 @@ export struct LocalMatchPage {
    * 格式化歌曲信息（指纹匹配返回的 ISongInfo）
    */
   private formatSongInfo(song: ISongInfo): string {
+    const songInfo = JSON.parse(JSON.stringify(song)) as Record<string, Object>
     const parts: string[] = []
-    const songId = song.getSongId?.()
+    const songId = songInfo['song_id'] as number
+
     if (songId && songId > 0) {
       parts.push(`songId: ${songId}`)
     }
-    const songName = song.getSongName?.()
+    const songName = songInfo['song_name'] as string
     if (songName) {
       parts.push(`songName: ${songName}`)
     }
-    const singerName = song.getSingerName?.()
+    const singerName = songInfo['singer_name'] as string
     if (singerName) {
       parts.push(`singer: ${singerName}`)
     }
-    const albumName = song.getAlbumName?.()
+    const albumName = songInfo['album_name'] as string
     if (albumName) {
       parts.push(`album: ${albumName}`)
     }

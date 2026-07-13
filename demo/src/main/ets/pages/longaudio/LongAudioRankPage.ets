@@ -16,6 +16,7 @@ export struct LongAudioRankPage {
   @Local viewModel: LongAudioRankViewModel = new LongAudioRankViewModel()
   private topTabScroller: ListScroller = new ListScroller()
   private subTabScroller: ListScroller = new ListScroller()
+  private albumListScroller: ListScroller = new ListScroller()
 
   aboutToAppear(): void {
     const size = this.navController.navPathStack.size()
@@ -60,6 +61,7 @@ export struct LongAudioRankPage {
                     .onClick(() => {
                       this.viewModel.selectTopCategory(repeatItem.index)
                       this.topTabScroller.scrollToIndex(repeatItem.index, true, ScrollAlign.CENTER)
+                      this.albumListScroller.scrollToIndex(0, true, ScrollAlign.START)
                     })
                 }
               })
@@ -87,6 +89,7 @@ export struct LongAudioRankPage {
                     .onClick(() => {
                       this.viewModel.selectSubCategory(repeatItem.index)
                       this.subTabScroller.scrollToIndex(repeatItem.index, true, ScrollAlign.CENTER)
+                      this.albumListScroller.scrollToIndex(0, true, ScrollAlign.START)
                     })
                 }
               })
@@ -102,7 +105,7 @@ export struct LongAudioRankPage {
           }
 
           // 专辑列表 — 横向卡片布局
-          List() {
+          List({ scroller: this.albumListScroller }) {
             Repeat(this.viewModel.albumList).each((repeatItem) => {
               ListItem() {
                 LongAudioAlbumItemView({
@@ -121,11 +124,25 @@ export struct LongAudioRankPage {
                 })
               }
             })
+
+            if (this.viewModel.showAllLoadedTip) {
+              ListItem() {
+                Text('已全部加载')
+                  .fontSize(12)
+                  .fontColor('#999999')
+                  .width('100%')
+                  .textAlign(TextAlign.Center)
+                  .padding({ top: 12, bottom: 12 })
+              }
+            }
           }
           .width('100%').layoutWeight(1)
           .edgeEffect(EdgeEffect.Spring)
           .scrollBar(BarState.Off)
           .padding({ left: 12, right: 12 })
+          .onReachEnd(() => {
+            this.viewModel.onReachListEnd()
+          })
         }
       }
       .width('100%').height('100%').backgroundColor('#F5F5F5').padding({ bottom: 70 - AppUtil.bottomSafeArea })

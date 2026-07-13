@@ -94,7 +94,7 @@ export struct AreaListPage {
           // 列表
           List() {
             LazyForEach(
-              new AreaShelfDataSource(this.viewModel.shelfItems),
+              this.viewModel.dataSource,
               (item: IAreaShelfItem, index: number) => {
                 ListItem() {
                   this.buildShelfItem(item, index)
@@ -126,21 +126,19 @@ export struct AreaListPage {
                 .width('100%')
                 .height(50)
                 .justifyContent(FlexAlign.Center)
-                .onClick(() => {
-                  this.viewModel.loadMore()
-                })
+                // .onClick(() => {
+                //   this.viewModel.loadMore()
+                // })
               }
             }
           }
           .width('100%')
-          .height('100%')
+          .layoutWeight(1)
           .padding({ bottom: 60 })
           .scrollBar(BarState.Off)
           .onReachEnd(() => {
-            // 滚动到底部时自动加载更多
-            if (this.viewModel.hasMore && !this.viewModel.isLoading) {
-              this.viewModel.loadMore()
-            }
+            // 滚动到底部时自动加载更多（移除手动点击，仅靠滚动触发）
+            this.viewModel.loadMore()
           })
         }
       }
@@ -454,39 +452,6 @@ export struct AreaListPage {
       NavController.getInstance().push(RouteName.PLAYER_PAGE);
     } else {
       ToastUtil.show(`播放失败: ${ret}`)
-    }
-  }
-}
-
-/**
- * LazyForEach 数据源适配器
- */
-class AreaShelfDataSource implements IDataSource {
-  private dataArray: IAreaShelfItem[] = []
-  private listeners: DataChangeListener[] = []
-
-  constructor(data: IAreaShelfItem[]) {
-    this.dataArray = data
-  }
-
-  totalCount(): number {
-    return this.dataArray.length
-  }
-
-  getData(index: number): IAreaShelfItem {
-    return this.dataArray[index]
-  }
-
-  registerDataChangeListener(listener: DataChangeListener): void {
-    if (this.listeners.indexOf(listener) < 0) {
-      this.listeners.push(listener)
-    }
-  }
-
-  unregisterDataChangeListener(listener: DataChangeListener): void {
-    const pos = this.listeners.indexOf(listener)
-    if (pos >= 0) {
-      this.listeners.splice(pos, 1)
     }
   }
 }

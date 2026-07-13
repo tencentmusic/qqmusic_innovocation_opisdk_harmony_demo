@@ -1424,7 +1424,7 @@ export struct OpenApiLayout {
     let partnerAccessToken = this.params[1] ?? ''
     let partnerAccountId = this.params[2] ?? ''
     let forceBind = Boolean(this.params[3] ?? false)
-    OpenApiSdk.openApi?.partnerLogin.updateThirdPartyAccount(partnerAppId, partnerAccessToken, partnerAccountId, forceBind).then((result) => {
+    OpenApiSdk.loginApi?.updateThirdPartyAccount(partnerAppId, partnerAccessToken, partnerAccountId, forceBind).then((result) => {
       MLog.i('OpenApiLayout', '三方绑定响应' + JSON.stringify(result))
       this.displayText = JSON.stringify(result);
     })
@@ -1434,7 +1434,7 @@ export struct OpenApiLayout {
     let partnerAppId = this.params[0] ?? ''
     let partnerAccessToken = this.params[1] ?? ''
     let partnerAccountId = this.params[2] ?? ''
-    OpenApiSdk.openApi?.partnerLogin.deleteThirdPartyAccountBindState(partnerAppId, partnerAccessToken, partnerAccountId).then((result) => {
+    OpenApiSdk.loginApi?.deleteThirdPartyAccountBindState(partnerAppId, partnerAccessToken, partnerAccountId).then((result) => {
       this.displayText = JSON.stringify(result);
     })
   }
@@ -1443,7 +1443,7 @@ export struct OpenApiLayout {
     let partnerAppId = this.params[0] ?? ''
     let partnerAccessToken = this.params[1] ?? ''
     let partnerAccountId = this.params[2] ?? ''
-    OpenApiSdk.openApi?.partnerLogin.queryThirdPartyAccountBindState(partnerAppId, partnerAccessToken, partnerAccountId).then((result) => {
+    OpenApiSdk.loginApi?.queryThirdPartyAccountBindState(partnerAppId, partnerAccessToken, partnerAccountId).then((result) => {
       this.displayText = JSON.stringify(result);
     })
   }
@@ -1452,7 +1452,7 @@ export struct OpenApiLayout {
     let partnerAppId = this.params[0] ?? ''
     let partnerAccessToken = this.params[1] ?? ''
     let partnerAccountId = this.params[2] ?? ''
-    OpenApiSdk.openApi?.partnerLogin.thirdPartyAccountLogin(partnerAppId, partnerAccessToken, partnerAccountId).then((result) => {
+    OpenApiSdk.loginApi?.thirdPartyAccountLogin(partnerAppId, partnerAccessToken, partnerAccountId).then((result) => {
       this.displayText = JSON.stringify(result);
     })
   }
@@ -2353,7 +2353,7 @@ export struct OpenApiLayout {
     const mids = null
     const ids = [213053019]
 
-    OpenApiSdk.downloadApi?.getDownloadUrlInfo(mids, ids)
+    OpenApiSdk?.openApi?.downloadApi?.getDownloadUrlInfo(mids, ids)
       .then((result) => {
         this.displayText = JSON.stringify(result)
       })
@@ -2363,7 +2363,7 @@ export struct OpenApiLayout {
     const songId = 213053019
     const songRate = 4
 
-    OpenApiSdk.downloadApi?.reportDownloadQuota(songId, songRate)
+    OpenApiSdk?.openApi?.downloadApi?.reportDownloadQuota(songId, songRate)
       .then((result) => {
         this.displayText = JSON.stringify(result)
       })

@@ -133,17 +133,42 @@ export struct SongListPage {
                       })
                     }
                   })
+
+                  if (this.viewModel.isLoadingSongs && this.viewModel.songList.length > 0) {
+                    ListItem() {
+                      Text('正在加载更多...')
+                        .fontSize(12)
+                        .fontColor(Color.Gray)
+                        .width('100%')
+                        .textAlign(TextAlign.Center)
+                        .padding({ top: 12, bottom: 12 })
+                    }
+                  } else if (this.viewModel.showAllLoadedTip) {
+                    ListItem() {
+                      Text('已加载全部')
+                        .fontSize(12)
+                        .fontColor(Color.Gray)
+                        .width('100%')
+                        .textAlign(TextAlign.Center)
+                        .padding({ top: 12, bottom: 12 })
+                    }
+                  }
                 }
                 .width('100%')
                 .layoutWeight(1)
                 .edgeEffect(EdgeEffect.Spring)
                 .scrollBar(BarState.Off)
                 .onReachEnd(() => {
+                  this.viewModel.showAllLoadedTip = false
                   // TYPE_FOLDER 使用 passBack 游标加载更多
                   if (this.viewModel.playListType === MusicListType.TYPE_FOLDER) {
-                    this.viewModel.loadMoreSongs()
+                    this.viewModel.loadMoreSongs().then(() => {
+                      this.viewModel.onReachListEnd()
+                    })
                   } else {
-                    this.viewModel.loadSongs(true)
+                    this.viewModel.loadSongs(true).then(() => {
+                      this.viewModel.onReachListEnd()
+                    })
                   }
                 })
               } else if (!this.viewModel.isLoadingSongs) {
@@ -162,26 +187,10 @@ export struct SongListPage {
                 .justifyContent(FlexAlign.Center)
                 .alignItems(HorizontalAlign.Center)
               }
-
-              // 底部加载状态提示
-              if (this.viewModel.isLoadingSongs && this.viewModel.songList.length > 0) {
-                Text('正在加载更多...')
-                  .fontSize(12)
-                  .fontColor(Color.Gray)
-                  .width('100%')
-                  .textAlign(TextAlign.Center)
-                  .padding({ top: 12, bottom: 12 })
-              } else if (!this.viewModel.hasMore && this.viewModel.songList.length > 0) {
-                Text('已加载全部')
-                  .fontSize(12)
-                  .fontColor(Color.Gray)
-                  .width('100%')
-                  .textAlign(TextAlign.Center)
-                  .padding({ top: 12, bottom: 12 })
-              }
             }
           }
           .scrollable(ScrollDirection.Vertical)
+          .edgeEffect(EdgeEffect.Spring)
           .scrollBar(BarState.Off)
           .width('100%')
           .layoutWeight(1)

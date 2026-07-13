@@ -16,6 +16,7 @@ export struct LongAudioCategoryPage {
   @Local viewModel: LongAudioCategoryViewModel = new LongAudioCategoryViewModel()
   private topTabScroller: ListScroller = new ListScroller()
   private subTabScroller: ListScroller = new ListScroller()
+  private albumListScroller: ListScroller = new ListScroller()
 
   aboutToAppear(): void {
     const size = this.navController.navPathStack.size()
@@ -63,6 +64,7 @@ export struct LongAudioCategoryPage {
                     .onClick(() => {
                       this.viewModel.selectCategory(repeatItem.index)
                       this.topTabScroller.scrollToIndex(repeatItem.index, true, ScrollAlign.CENTER)
+                      this.albumListScroller.scrollToIndex(0, true, ScrollAlign.START)
                     })
                 }
               })
@@ -90,6 +92,7 @@ export struct LongAudioCategoryPage {
                     .onClick(() => {
                       this.viewModel.selectSubCategory(repeatItem.index)
                       this.subTabScroller.scrollToIndex(repeatItem.index, true, ScrollAlign.CENTER)
+                      this.albumListScroller.scrollToIndex(0, true, ScrollAlign.START)
                     })
                 }
               })
@@ -115,7 +118,10 @@ export struct LongAudioCategoryPage {
                     .backgroundColor(this.viewModel.currentFilterIndex === repeatItem.index ? '#6200EE' : '#F0F0F0')
                     .borderRadius(14)
                     .padding({ top: 4, bottom: 4, left: 10, right: 10 })
-                    .onClick(() => { this.viewModel.selectFilter(repeatItem.index) })
+                    .onClick(() => {
+                      this.viewModel.selectFilter(repeatItem.index)
+                      this.albumListScroller.scrollToIndex(0, true, ScrollAlign.START)
+                    })
                 })
               }
             }
@@ -126,7 +132,10 @@ export struct LongAudioCategoryPage {
               .fontSize(12)
               .fontColor('#6200EE')
               .padding({ left: 8, right: 8 })
-              .onClick(() => { this.viewModel.toggleSortType() })
+              .onClick(() => {
+                this.viewModel.toggleSortType()
+                this.albumListScroller.scrollToIndex(0, true, ScrollAlign.START)
+              })
           }
           .width('100%')
           .padding({ left: 12, right: 12, top: 6, bottom: 6 })
@@ -144,7 +153,7 @@ export struct LongAudioCategoryPage {
             }
             .width('100%').layoutWeight(1).justifyContent(FlexAlign.Center).alignItems(HorizontalAlign.Center)
           } else {
-            List() {
+            List({ scroller: this.albumListScroller }) {
               Repeat(this.viewModel.albumList).each((repeatItem) => {
                 ListItem() {
                   LongAudioAlbumItemView({

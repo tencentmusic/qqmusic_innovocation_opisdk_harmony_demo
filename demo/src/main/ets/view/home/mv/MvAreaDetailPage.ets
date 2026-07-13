@@ -4,6 +4,7 @@ import { RouteName } from '../../../nav/RouteMap'
 import { SpecialArea, IMediaSimpleRes, IMediaGroupRes } from '@qqmusic/opisdk-entity'
 import { MVPlayerPageParams, MvAreaDetailPageParams } from '../../../nav/RouteParams'
 import { NumberFormatUtils } from '../../../utils/NumberFormatUtils'
+import { AppUtil } from '../../../utils/AppUtil'
 
 const TAG = 'MvAreaDetailPage'
 
@@ -137,6 +138,7 @@ export struct MvAreaDetailPage {
       }
       .width('100%')
       .height('100%')
+      .padding({ bottom: 70 - AppUtil.bottomSafeArea })
     }
     .hideTitleBar(true)
   }

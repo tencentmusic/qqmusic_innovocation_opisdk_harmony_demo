@@ -18,6 +18,8 @@ export class AreaListViewModel {
   shelfId: number = 0
   /** 页面标题 */
   title: string = ''
+  /** LazyForEach 数据源（保持引用稳定，通过 listener 通知 UI 刷新） */
+  dataSource: AreaShelfDataSource = new AreaShelfDataSource([])
 
   /** 数据列表 */
   @Trace shelfItems: IAreaShelfItem[] = []
@@ -29,7 +31,10 @@ export class AreaListViewModel {
   private lastContentId: string = ''
   /** 每页大小 */
   private readonly pageSize: number = 20
-
+  /** 防止重复加载的标记 */
+  private lastLoadMoreTime: number = 0
+  /** 防抖间隔（毫秒），防止弹簧回弹导致 onReachEnd 触发两次 */
+  private readonly loadMoreDebounceMs: number = 500
   /**
    * 初始化参数
    */
@@ -48,6 +53,7 @@ export class AreaListViewModel {
     this.lastContentId = ''
     this.hasMore = true
     this.isLoading = true
+    this.lastLoadMoreTime = 0
     MLog.i(TAG, `refresh: shelfId=${this.shelfId}, areaId=${this.areaId}`)
 
     try {
@@ -62,22 +68,28 @@ export class AreaListViewModel {
       if (result && result.isSuccess()) {
         const data = result.data
         if (data) {
-          this.shelfItems = data.getShelfItems() ?? []
+          const items = data.getShelfItems() ?? []
+          this.shelfItems = items
           this.hasMore = result.hasMore
+          MLog.i(TAG, `shelfItems size = ${this.shelfItems.length}, hasMore=${this.hasMore}`);
+          this.dataSource.reloadData(items)
           this.updateLastContentId()
         } else {
           this.shelfItems = []
           this.hasMore = false
+          this.dataSource.reloadData([])
         }
       } else {
         MLog.e(TAG, `refresh failed: code=${result?.ret}, msg=${result?.errorMsg}`)
         this.shelfItems = []
         this.hasMore = false
+        this.dataSource.reloadData([])
       }
     } catch (e) {
       MLog.e(TAG, `refresh error: ${JSON.stringify(e)}`)
       this.shelfItems = []
       this.hasMore = false
+      this.dataSource.reloadData([])
     } finally {
       this.isLoading = false
     }
@@ -87,12 +99,13 @@ export class AreaListViewModel {
    * 加载更多（分页加载下一页）
    */
   async loadMore(): Promise<void> {
-    if (!this.hasMore || this.isLoading) {
+    const now = Date.now()
+    if (!this.hasMore || now - this.lastLoadMoreTime < this.loadMoreDebounceMs) {
       return
     }
+    this.lastLoadMoreTime = now
     this.isLoading = true
     MLog.i(TAG, `loadMore: shelfId=${this.shelfId}, lastContentId=${this.lastContentId}`)
-
     try {
       const result: OpenApiResponse<IAreaShelf> | undefined =
         (await OpenApiSdk.openApi?.operAreaApi.fetchShelfContent(
@@ -106,8 +119,10 @@ export class AreaListViewModel {
         const data = result.data
         if (data && data.getShelfItems() && data.getShelfItems().length > 0) {
           const newItems = data.getShelfItems()
-          this.shelfItems = this.shelfItems.concat(newItems)
+          this.shelfItems.push(...newItems)
           this.hasMore = result.hasMore
+          MLog.i(TAG, `loadMore: shelfItems size = ${this.shelfItems.length}, hasMore=${this.hasMore}`)
+          this.dataSource.addData(newItems)
           this.updateLastContentId()
         } else {
           this.hasMore = false
@@ -139,6 +154,58 @@ export class AreaListViewModel {
       this.lastContentId = lastItem.getFolder()?.getId().toString() ?? ''
     } else if (this.areaShelfType === AreaShelfType.AreaShelfType_Album) {
       this.lastContentId = lastItem.getAlbum()?.getId().toString() ?? ''
+    }
+  }
+}
+
+/**
+ * LazyForEach 数据源适配器
+ */
+export class AreaShelfDataSource implements IDataSource {
+  private dataArray: IAreaShelfItem[] = []
+  private listeners: DataChangeListener[] = []
+
+  constructor(data: IAreaShelfItem[]) {
+    this.dataArray = data
+  }
+
+  totalCount(): number {
+    return this.dataArray.length
+  }
+
+  getData(index: number): IAreaShelfItem {
+    return this.dataArray[index]
+  }
+
+  registerDataChangeListener(listener: DataChangeListener): void {
+    if (this.listeners.indexOf(listener) < 0) {
+      this.listeners.push(listener)
+    }
+  }
+
+  unregisterDataChangeListener(listener: DataChangeListener): void {
+    const pos = this.listeners.indexOf(listener)
+    if (pos >= 0) {
+      this.listeners.splice(pos, 1)
+    }
+  }
+  /**
+   * 替换全部数据（首次加载/刷新时调用）
+   */
+  reloadData(newData: IAreaShelfItem[]): void {
+    this.dataArray = newData
+    for (const listener of this.listeners) {
+      listener.onDataReloaded()
+    }
+  }
+  /**
+   * 追加数据（加载更多时调用）
+   */
+  addData(newItems: IAreaShelfItem[]): void {
+    const startIndex = this.dataArray.length
+    this.dataArray.push(...newItems)
+    for (const listener of this.listeners) {
+      listener.onDataAdd(startIndex)
     }
   }
 }

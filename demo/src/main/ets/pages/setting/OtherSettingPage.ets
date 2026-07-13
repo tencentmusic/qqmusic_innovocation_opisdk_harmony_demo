@@ -135,23 +135,6 @@ export struct OtherSettingPage {
 
   build() {
     NavDestination() {
-    Column() {
-      // 顶部导航栏
-      Row() {
-        Image($r('app.media.ic_back_dark'))
-          .width(44).height(44)
-          .onClick(() => NavController.getInstance().pop())
-        Text('其他设置页')
-          .fontSize(18)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 8 })
-      }
-      .width('100%')
-      .height(44)
-      .padding({ left: 16 })
-      .borderWidth({ bottom: 0.5 })
-      .borderColor('#36000000')
-
       // 可滚动内容
       Scroll() {
         Column() {
@@ -509,14 +492,11 @@ export struct OtherSettingPage {
         .width('100%')
       }
       .width('100%')
-      .layoutWeight(1)
+      .height('100%')
       .scrollBar(BarState.Off)
     }
-    .width('100%')
-    .height('100%')
+    .title('其他设置页')
     .backgroundColor('#F5F5F5')
-    }
-    .hideTitleBar(true)
   }
 }
 

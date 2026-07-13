@@ -130,7 +130,7 @@ export class MineViewModel {
 
       // 获取第三方账号ID
       try {
-        const partnerId = OpenApiSdk.openApi?.partnerLogin?.queryThirdPartyAccountID()
+        const partnerId = OpenApiSdk.loginApi?.queryThirdPartyAccountID()
         if (!this.isStillLoggedIn()) {
           MLog.d(this.TAG, "updateData: logged out during queryThirdPartyAccountID, skip")
           return

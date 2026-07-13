@@ -13,6 +13,8 @@ export class LongAudioRankViewModel {
   @Trace public tag: string = ''
   @Trace public currentTopIndex: number = 0
   @Trace public currentSubIndex: number = 0
+  @Trace public isAllLoaded: boolean = false
+  @Trace public showAllLoadedTip: boolean = false
 
   get topCategories(): ICategory[] {
     return this.rankCategories
@@ -90,14 +92,17 @@ export class LongAudioRankViewModel {
       const resp = await OpenApiSdk.openApi?.longAudioApi.fetchAlbumListOfRankLongAudioByCategory([topId, subId])
       if (resp && resp.isSuccess() && resp.data) {
         this.albumList = resp.data
+        this.isAllLoaded = true
         MLog.i(TAG, `fetchAlbumList success, count: ${this.albumList.length}`)
       } else {
         MLog.w(TAG, `fetchAlbumList failed: ${resp?.errorMsg}`)
         this.albumList = []
+        this.isAllLoaded = false
       }
     } catch (e) {
       MLog.e(TAG, `fetchAlbumList error: ${JSON.stringify(e)}`)
       this.albumList = []
+      this.isAllLoaded = false
     } finally {
       this.isLoading = false
     }
@@ -111,6 +116,7 @@ export class LongAudioRankViewModel {
 
   selectSubCategory(index: number): void {
     this.currentSubIndex = index
+    this.showAllLoadedTip = false
     this.fetchAlbumList()
   }
 
@@ -147,6 +153,15 @@ export class LongAudioRankViewModel {
       this.albumList = newList
     } finally {
       this.isTogglingCollect = false
+    }
+  }
+
+  /**
+   * 列表滚动到底部时调用，显示"已全部加载"提示
+   */
+  onReachListEnd(): void {
+    if (this.isAllLoaded && this.albumList.length > 0) {
+      this.showAllLoadedTip = true
     }
   }
 }

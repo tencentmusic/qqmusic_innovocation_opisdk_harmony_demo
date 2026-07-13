@@ -12,7 +12,6 @@ export struct PartnerLoginPage {
   @Local isForceBind: boolean = true;
 
   async aboutToAppear() {
-    this.impl = OpenApiSdk.openApi?.partnerLogin;
     // 初始化 Preferences
     try {
       this.appId = MMKVHelper.getObject(MMKVHelper.getCommonMMKV(), 'appId', '')!
@@ -78,8 +77,9 @@ export struct PartnerLoginPage {
             .layoutWeight(1)
             .onClick(() => {
               this.result = " 执行中  ";
-              this.impl?.updateThirdPartyAccount(this.appId, this.token, this.accountId,
-                this.isForceBind).then((response) => {
+              OpenApiSdk.loginApi?.updateThirdPartyAccount(
+                this.appId, this.token, this.accountId, this.isForceBind
+              ).then((response) => {
                 this.result = `ret: ${response?.ret} msg : ${response?.errorMsg} bindAccountID: ${response?.data}`;
               })
             })
@@ -96,7 +96,9 @@ export struct PartnerLoginPage {
           .margin({ top: 30, left: 30, right: 30 })
           .onClick(() => {
             this.result = " 执行中  ";
-            this.impl?.deleteThirdPartyAccountBindState(this.appId, this.token, this.accountId).then((response) => {
+            OpenApiSdk.loginApi?.deleteThirdPartyAccountBindState(
+              this.appId, this.token, this.accountId
+            ).then((response) => {
               this.result = `ret: ${response?.ret} msg : ${response?.errorMsg}`;
             })
           })
@@ -108,7 +110,9 @@ export struct PartnerLoginPage {
           .margin({ top: 30, left: 30, right: 30 })
           .onClick(() => {
             this.result = " 执行中  ";
-            this.impl?.queryThirdPartyAccountBindState(this.appId, this.token, this.accountId).then((response) => {
+            OpenApiSdk.loginApi?.queryThirdPartyAccountBindState(
+              this.appId, this.token, this.accountId
+            ).then((response) => {
               this.result = `ret: ${response?.ret} msg : ${response?.errorMsg}  bindAccountID: ${response?.data}`;
             })
           })
@@ -120,7 +124,7 @@ export struct PartnerLoginPage {
           .margin({ top: 30, left: 30, right: 30 })
           .onClick(() => {
             this.result = " 执行中  ";
-            const id = this.impl?.queryThirdPartyAccountID();
+            const id = OpenApiSdk.loginApi?.queryThirdPartyAccountID();
             this.result = `当前登录帐号的ID 是  ${id}`;
           })
 
@@ -136,8 +140,10 @@ export struct PartnerLoginPage {
           })
           .onClick(() => {
             this.result = " 执行中  ";
-            this.impl?.enableRestoreLogin(true);
-            this.impl?.thirdPartyAccountLogin(this.appId, this.token, this.accountId).then((response) => {
+            OpenApiSdk.loginApi?.enableRestoreLogin(true);
+            OpenApiSdk.loginApi?.thirdPartyAccountLogin(
+              this.appId, this.token, this.accountId
+            ).then((response) => {
               this.result = `ret: ${response?.ret} msg : ${response?.errorMsg}`;
             })
           })

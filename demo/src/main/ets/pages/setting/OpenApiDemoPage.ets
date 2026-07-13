@@ -10,7 +10,6 @@
  */
 import { OpenApiSdk } from '@qqmusic/opisdk-base';
 import { InterfaceParams } from '../../model/InterfaceParams';
-import { NavController } from '../../nav/NavController';
 import { ToastUtil } from '../../utils/ToastUtil';
 import { AppUtil } from '../../utils/AppUtil';
 import {
@@ -26,7 +25,6 @@ export function OpenApiDemoPageBuilder(args?: Object) {
 
 @ComponentV2
 export struct OpenApiDemoPage {
-  @Consumer('navController') navController: NavController = NavController.getInstance()
   @Param args: object | undefined = undefined;
   // ========== 状态变量 ==========
   @Local displayText: string = ''
@@ -1541,185 +1539,165 @@ export struct OpenApiDemoPage {
 
   build() {
     NavDestination() {
-      Column() {
-        // 顶部导航栏
-        Row() {
-          Image($r('app.media.ic_back_dark'))
-            .width(44).height(44)
-            .onClick(() => this.navController.pop())
-          Text('OpenApi Demo')
-            .fontSize(18)
-            .fontWeight(FontWeight.Medium)
-            .margin({ left: 8 })
-        }
-        .width('100%')
-        .height(44)
-        .padding({ left: 16 })
-        .borderWidth({ bottom: 0.5 })
-        .borderColor('#36000000')
+      // 内容区域
+      Scroll() {
+        Column({ space: 10 }) {
+          // ===== 搜索框 =====
+          Row() {
+            Text('搜索方法名')
+              .fontSize(14)
+              .width(80)
+            TextInput({ text: this.inputKey, placeholder: '输入关键字过滤' })
+              .fontSize(14)
+              .layoutWeight(1)
+              .height(36)
+              .backgroundColor(Color.White)
+              .borderRadius(4)
+              .onChange((value: string) => {
+                this.inputKey = value
+                this.resultMeans = this.getSearchResults()
+              })
+          }
+          .width('100%')
+          .padding({ left: 12, right: 12 })
 
-        // 内容区域
-        Scroll() {
-          Column({ space: 10 }) {
-            // ===== 搜索框 =====
-            Row() {
-              Text('搜索方法名')
-                .fontSize(14)
-                .width(80)
-              TextInput({ text: this.inputKey, placeholder: '输入关键字过滤' })
-                .fontSize(14)
-                .layoutWeight(1)
-                .height(36)
-                .backgroundColor(Color.White)
-                .borderRadius(4)
-                .onChange((value: string) => {
-                  this.inputKey = value
-                  this.resultMeans = this.getSearchResults()
+          // ===== 方法选择器 =====
+          Row() {
+            Text('选择方法')
+              .fontSize(14)
+              .width(80)
+            Button(this.apiMethod)
+              .fontSize(13)
+              .layoutWeight(1)
+              .height(36)
+              .backgroundColor(Color.White)
+              .borderRadius(4)
+              .borderWidth(1)
+              .borderColor('#CCCCCC')
+              .fontColor(Color.Black)
+              .onClick(() => {
+                if (this.resultMeans.length === 0) {
+                  ToastUtil.show('无匹配方法')
+                  return
+                }
+                // 找到当前选中项在过滤列表中的索引
+                let selectedIdx = this.resultMeans.indexOf(this.apiMethod)
+                if (selectedIdx < 0) {
+                  selectedIdx = 0
+                }
+                AppUtil.uiContext?.showTextPickerDialog({
+                  range: this.resultMeans,
+                  selected: selectedIdx,
+                  value: this.apiMethod,
+                  canLoop: false,
+                  defaultPickerItemHeight: 40,
+                  onAccept: (value: TextPickerResult) => {
+                    this.select = value.index as number
+                    this.apiMethod = value.value as string
+                    this.currentValues = this.apiMeansList.get(this.apiMethod) ?? null
+                    this.resetParams()
+                  },
                 })
-            }
-            .width('100%')
-            .padding({ left: 12, right: 12 })
+              })
+          }
+          .width('100%')
+          .padding({ left: 12, right: 12 })
 
-            // ===== 方法选择器 =====
-            Row() {
-              Text('选择方法')
-                .fontSize(14)
-                .width(80)
-              Button(this.apiMethod)
+          // ===== 登录状态 =====
+          Row() {
+            Text('是否登录：' + (this.loginInfo ? '是' : '否'))
+              .fontSize(13)
+              .fontColor(this.loginInfo ? '#07C160' : '#FA5151')
+          }
+          .width('100%')
+          .padding({ left: 12, right: 12 })
+
+          // ===== 参数输入区域（动态显示最多5个） =====
+          if (this.currentValues && this.currentValues.fileds.length > 0) {
+            ForEach(this.currentValues.fileds, (field: string, index: number) => {
+              TextInput({ text: this.params[index], placeholder: field || `参数${index + 1}` })
                 .fontSize(13)
-                .layoutWeight(1)
                 .height(36)
                 .backgroundColor(Color.White)
                 .borderRadius(4)
                 .borderWidth(1)
-                .borderColor('#CCCCCC')
-                .fontColor(Color.Black)
-                .onClick(() => {
-                  if (this.resultMeans.length === 0) {
-                    ToastUtil.show('无匹配方法')
-                    return
-                  }
-                  // 找到当前选中项在过滤列表中的索引
-                  let selectedIdx = this.resultMeans.indexOf(this.apiMethod)
-                  if (selectedIdx < 0) {
-                    selectedIdx = 0
-                  }
-                  AppUtil.uiContext?.showTextPickerDialog({
-                    range: this.resultMeans,
-                    selected: selectedIdx,
-                    value: this.apiMethod,
-                    canLoop: false,
-                    defaultPickerItemHeight: 40,
-                    onAccept: (value: TextPickerResult) => {
-                      this.select = value.index as number
-                      this.apiMethod = value.value as string
-                      this.currentValues = this.apiMeansList.get(this.apiMethod) ?? null
-                      this.resetParams()
-                    },
-                  })
+                .borderColor('#E0E0E0')
+                .margin({ left: 12, right: 12 })
+                .onChange((value: string) => {
+                  this.params[index] = value
                 })
-            }
-            .width('100%')
-            .padding({ left: 12, right: 12 })
+            }, (field: string, index: number) => `${field}_${index}`)
+          } else {
+            Text('无参数')
+              .fontSize(13)
+              .fontColor(Color.Gray)
+              .margin({ left: 12 })
+          }
 
-            // ===== 登录状态 =====
-            Row() {
-              Text('是否登录：' + (this.loginInfo ? '是' : '否'))
-                .fontSize(13)
-                .fontColor(this.loginInfo ? '#07C160' : '#FA5151')
-            }
-            .width('100%')
-            .padding({ left: 12, right: 12 })
+          // ===== 发送请求按钮 =====
+          Button('发送请求')
+            .fontSize(15)
+            .width('93%')
+            .height(40)
+            .backgroundColor('#007AFF')
+            .borderRadius(8)
+            .fontColor(Color.White)
+            .onClick(() => {
+              this.displayText = '请求已发送, 正在等待响应...'
+              this.displayMode = true
+              const block = this.methodNameToBlock.get(this.apiMethod)
+              if (block && this.currentValues) {
+                block(this.currentValues)
+              } else {
+                this.displayText = '未找到对应方法: ' + this.apiMethod
+              }
+            })
 
-            // ===== 参数输入区域（动态显示最多5个） =====
-            if (this.currentValues && this.currentValues.fileds.length > 0) {
-              ForEach(this.currentValues.fileds, (field: string, index: number) => {
-                TextInput({ text: this.params[index], placeholder: field || `参数${index + 1}` })
-                  .fontSize(13)
-                  .height(36)
-                  .backgroundColor(Color.White)
-                  .borderRadius(4)
-                  .borderWidth(1)
-                  .borderColor('#E0E0E0')
-                  .margin({ left: 12, right: 12 })
-                  .onChange((value: string) => {
-                    this.params[index] = value
-                  })
-              }, (field: string, index: number) => `${field}_${index}`)
-            } else {
-              Text('无参数')
-                .fontSize(13)
-                .fontColor(Color.Gray)
-                .margin({ left: 12 })
-            }
-
-            // ===== 发送请求按钮 =====
-            Button('发送请求')
-              .fontSize(15)
+          // ===== 一键测试按钮 =====
+          if (this.showDebugButton) {
+            Button('一键测试所有接口')
+              .fontSize(14)
               .width('93%')
               .height(40)
-              .backgroundColor('#007AFF')
+              .backgroundColor('#FF9500')
               .borderRadius(8)
               .fontColor(Color.White)
               .onClick(() => {
-                this.displayText = '请求已发送, 正在等待响应...'
-                this.displayMode = true
-                const block = this.methodNameToBlock.get(this.apiMethod)
-                if (block && this.currentValues) {
-                  block(this.currentValues)
-                } else {
-                  this.displayText = '未找到对应方法: ' + this.apiMethod
-                }
+                this.runAllTests()
               })
-
-            // ===== 一键测试按钮 =====
-            if (this.showDebugButton) {
-              Button('一键测试所有接口')
-                .fontSize(14)
-                .width('93%')
-                .height(40)
-                .backgroundColor('#FF9500')
-                .borderRadius(8)
-                .fontColor(Color.White)
-                .onClick(() => {
-                  this.runAllTests()
-                })
-            }
-
-            // ===== 结果显示区域 =====
-            Column() {
-              Text('响应结果：')
-                .fontSize(14)
-                .fontWeight(FontWeight.Medium)
-                .width('100%')
-                .padding({ left: 12, top: 8, bottom: 4 })
-
-              Text(this.displayText)
-                .fontSize(12)
-                .fontColor('#333333')
-                .width('100%')
-                .padding({ left: 12, right: 12, bottom: 16 })
-                .textAlign(TextAlign.Start)
-                .fontFamily('monospace')
-            }
-            .width('93%')
-            .backgroundColor(Color.White)
-            .borderRadius(8)
-            .margin({ top: 4 })
           }
-          .width('100%')
+
+          // ===== 结果显示区域 =====
+          Column() {
+            Text('响应结果：')
+              .fontSize(14)
+              .fontWeight(FontWeight.Medium)
+              .width('100%')
+              .padding({ left: 12, top: 8, bottom: 4 })
+
+            Text(this.displayText)
+              .fontSize(12)
+              .fontColor('#333333')
+              .width('100%')
+              .padding({ left: 12, right: 12, bottom: 16 })
+              .textAlign(TextAlign.Start)
+              .fontFamily('monospace')
+          }
+          .width('93%')
+          .backgroundColor(Color.White)
+          .borderRadius(8)
+          .margin({ top: 4 })
         }
         .width('100%')
-        .layoutWeight(1)
-        .scrollBar(BarState.Off)
-        .edgeEffect(EdgeEffect.Spring)
-        .align(Alignment.Top)
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#F5F5F5')
+      .scrollBar(BarState.Off)
+      .edgeEffect(EdgeEffect.Spring)
+      .align(Alignment.Top)
     }
-    .hideTitleBar(true)
+    .title('OpenApi Demo')
+    .backgroundColor('#F5F5F5')
   }
 
   // ========== 一键测试所有接口 ==========

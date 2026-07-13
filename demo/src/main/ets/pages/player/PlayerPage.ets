@@ -232,17 +232,17 @@ export struct PlayerPage {
         })
 
       // 下载
-      Image($r('app.media.icon_setting_placeholder'))
-        .width(20)
-        .height(20)
+      Image($r('app.media.icon_player_download_light'))
+        .width(45)
+        .height(45)
         .onClick(() => {
           ToastUtil.show('下载功能开发中')
         })
 
       // 收藏
       Image(this.model.isFavorite ? $r('app.media.ic_heart_red') : $r('app.media.ic_heart'))
-        .width(20)
-        .height(20)
+        .width(45)
+        .height(45)
         .onClick(() => {
           this.model.toggleFavorite()
         })

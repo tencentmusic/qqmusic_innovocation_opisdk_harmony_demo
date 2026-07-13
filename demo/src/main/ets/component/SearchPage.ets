@@ -63,6 +63,14 @@ export struct SearchPage {
             this.searchViewModel.pageStatus = SearchPageStatus.SMART_SEARCH;
             this.searchViewModel.smartSearchKey(value);
           })
+          .onSubmit(()=>{
+            this.doSmartSearch = false;
+            if (this.searchViewModel.pageStatus === SearchPageStatus.RESULT){
+              this.searchViewModel.search(this.searchInput, tabList[this.currentTab][1])
+            } else {
+              this.searchViewModel.pageStatus = SearchPageStatus.RESULT;
+            }
+          })
         Image($r('app.media.icon_search_placeholder'))
           .width(20).height(20)
           .fillColor('#6200ee')

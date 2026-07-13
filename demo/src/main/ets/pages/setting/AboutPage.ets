@@ -11,7 +11,6 @@ import { InputDialog } from '../../dialog/setting/InputDialog';
 import { CopyableItem } from '../../view/setting/CopyableItem';
 import { EditorItem } from '../../view/setting/EditorItem';
 import { UrlItem } from '../../view/setting/UrlItem';
-import { NavController } from '../../nav/NavController';
 import { ToastUtil } from '../../utils/ToastUtil';
 import { deviceInfo } from '@kit.BasicServicesKit';
 import { AppUtil } from '../../utils/AppUtil';
@@ -20,7 +19,6 @@ const TAG = 'AboutPage';
 
 @ComponentV2
 export struct AboutPage {
-  @Consumer('navController') navController: NavController = NavController.getInstance()
   // 可编辑字段
   @Local channelId: string = SPUtils.getString('DemoChannelId', Global.channelId || '');
   @Local opiDeviceId: string = SPUtils.getString('demoOpiDeviceId', '123456789');
@@ -107,24 +105,6 @@ export struct AboutPage {
 
   build() {
     NavDestination() {
-    Column() {
-      // 顶部导航栏
-      Row() {
-        Image($r('app.media.ic_back_dark'))
-          .width(44)
-          .height(44)
-          .onClick(() => this.navController.pop())
-        Text('关于')
-          .fontSize(18)
-          .fontWeight(FontWeight.Medium)
-          .margin({ left: 8 })
-      }
-      .width('100%')
-      .height(44)
-      .padding({ left: 16 })
-      .borderWidth({ bottom: 0.5 })
-      .borderColor('#36000000')
-
       Scroll() {
         Column() {
           // 包名
@@ -261,14 +241,11 @@ export struct AboutPage {
         .width('100%')
       }
       .width('100%')
-      .layoutWeight(1)
+      .height('100%')
       .scrollBar(BarState.Off)
     }
-    .width('100%')
-    .height('100%')
+    .title('关于')
     .backgroundColor('#F5F5F5')
-    }
-    .hideTitleBar(true)
   }
 }
 

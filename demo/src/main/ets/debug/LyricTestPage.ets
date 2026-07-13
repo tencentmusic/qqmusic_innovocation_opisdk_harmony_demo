@@ -20,19 +20,22 @@ export struct LyricTestPage {
   build() {
     NavDestination() {
       Column() {
-        Row({space: 5}) {
-          ForEach(this.lyricType, (item: LyricType, index: number) => {
-            Button('样式' + (index + 1))
-              .onClick(()=>{
-                this.lineTextParam.fontColor = item.lineColor;
-                this.highlightTextParam.fontColor = item.highlightColor;
-                this.highlightTextParam.maskColor = item.maskColor;
-                this.lineSpace = item.lineSpace;
-                this.lyricTextAlign = item.lyricTextAlign;
-                this.scrollAlign = item.scrollAlign;
-              })
-          })
-        }
+        Scroll() {
+          Row({space: 5}) {
+            ForEach(this.lyricType, (item: LyricType, index: number) => {
+              Button('样式' + (index + 1))
+                .onClick(()=>{
+                  this.lineTextParam.fontColor = item.lineColor;
+                  this.highlightTextParam.fontColor = item.highlightColor;
+                  this.highlightTextParam.maskColor = item.maskColor;
+                  this.lineSpace = item.lineSpace;
+                  this.lyricTextAlign = item.lyricTextAlign;
+                  this.scrollAlign = item.scrollAlign;
+                })
+            })
+          }
+        }.scrollable(ScrollDirection.Horizontal)
+        .scrollBar(BarState.Off)
 
         // 歌词
         if (this.showTranslation === 0) {
@@ -102,6 +105,7 @@ export struct LyricTestPage {
           })
 
       }
+      .padding({left: 20, right: 20})
       .width('100%')
       .height('100%')
     }

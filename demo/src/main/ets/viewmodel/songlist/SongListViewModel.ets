@@ -8,37 +8,6 @@ import { DemoGlobal } from '../../utils/DemoGlobal'
 const TAG = 'SongListViewModel'
 
 /**
- * ISinger 最小实现类，用于传给 SingerFavApi 进行收藏操作
- * 注：不能直接 new Singer()，因为 @Serializable 装饰器会导致构造函数返回 any 类型
- */
-class SingerProxy implements ISinger {
-  private readonly _singerId: number
-  private readonly _singerMid: string | null
-  private readonly _singerName: string
-  private readonly _picUrl: string | null
-
-  constructor(singerId: number, singerMid: string | null, singerName: string, picUrl: string | null) {
-    this._singerId = singerId
-    this._singerMid = singerMid
-    this._singerName = singerName
-    this._picUrl = picUrl
-  }
-
-  getSingerId(): number { return this._singerId }
-  getSingerMid(): string | null { return this._singerMid }
-  getSingerName(): string { return this._singerName }
-  getSingerTitle(): string | null { return null }
-  getCountry(): string | null { return null }
-  getSingerTranslatorName(): string | null { return null }
-  getSingerPic(): string | null { return this._picUrl }
-  getSingerPic150x150(): string | null { return null }
-  getSingerPic300x300(): string | null { return null }
-  getSingerPic500x500(): string | null { return null }
-  getSpell(): string | null { return null }
-  getSingerPicUrlBySize(_size?: string): string | null { return this._picUrl }
-}
-
-/**
  * 通用歌曲列表 ViewModel
  * 支持：播放全部、收藏/取消收藏、添加歌曲到播放列表、多选模式、歌曲播控
  *
@@ -60,6 +29,8 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
   @Trace public hasMore: boolean = true
   /** 列表名称（专辑名或歌单名） */
   @Trace public listName: string = ''
+  /** 是否已滚动到底部并显示"已加载全部"提示 */
+  @Trace public showAllLoadedTip: boolean = false
   /** 列表是否已收藏 */
   @Trace public isListCollected: boolean = false
   @Trace public isTogglingCollect: boolean = false
@@ -463,6 +434,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
       this.page = 0
       this.songList = []
       this.hasMore = true
+      this.showAllLoadedTip = false
       // TYPE_FOLDER 场景：重置 passBack 游标
       if (this.playListType === MusicListType.TYPE_FOLDER) {
         this.folderPassBack = ''
@@ -580,6 +552,15 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
     }
   }
 
+  /**
+   * 列表滚动到底部时调用，显示"已加载全部"提示
+   * 仅在数据已全部加载（无更多）且有歌曲数据时显示
+   */
+  onReachListEnd(): void {
+    if (!this.hasMore && this.songList.length > 0 && !this.isLoadingSongs) {
+      this.showAllLoadedTip = true
+    }
+  }
   /**
    * 加载剩余页面（从当前 page 开始，不清空已有数据）
    * 供 fetchAlbumDetail 中榜单/歌手场景使用，在首屏数据已填充后继续拉取后续页

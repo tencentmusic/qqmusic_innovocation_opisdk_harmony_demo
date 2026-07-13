@@ -48,13 +48,9 @@ export class LocalMatchViewModel {
     this.isLoading = true
 
     const id3Info: ISongID3Info = {
-      songName: songName,
-      singerName: singer,
-      albumName: album,
-      duration: null,
-      keyId: null,
-      fileName: null,
-      filePath: null
+      song: songName,
+      singer: singer,
+      album: album
     }
 
     try {

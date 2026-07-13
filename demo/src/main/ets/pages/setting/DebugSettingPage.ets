@@ -47,7 +47,6 @@ const TAG = 'DebugSettingPage';
  */
 @ComponentV2
 export struct DebugSettingPage {
-  @Consumer('homeViewModel') homeViewModel: HomeViewModel = new HomeViewModel()
   // 环境相关
   @Local curEnv: string = this.initCurEnv();
   // TODO(chezijian): 鸿蒙侧 Global.isWnsTestEnv 不存在 , 暂时直接写死 ENV_TEST;
@@ -244,244 +243,224 @@ export struct DebugSettingPage {
 
   build() {
     NavDestination() {
-      Column() {
-        // 顶部导航栏
-        Row() {
-          Image($r('app.media.ic_back_dark'))
-            .width(44).height(44)
-            .onClick(() => NavController.getInstance().pop())
-          Text('debug调试页')
-            .fontSize(18)
-            .fontWeight(FontWeight.Medium)
-            .margin({ left: 8 })
-        }
-        .width('100%')
-        .height(44)
-        .padding({ left: 16 })
-        .borderWidth({ bottom: 0.5 })
-        .borderColor('#36000000')
+      Scroll() {
+        Column() {
+          // ========== 调试开关项 ==========
 
-        Scroll() {
-          Column() {
-            // ========== 调试开关项 ==========
+          // 切换帐号检查模式
+          SingleItem({
+            title: '切换帐号检查模式',
+            item: `${this.curAppCheckMode}-${Global.opiAppId}`, onItemClick: () => {
+              this.appCheckModeDialog?.open();
+            }
+          })
 
-            // 切换帐号检查模式
-            SingleItem({
-              title: '切换帐号检查模式',
-              item: `${this.curAppCheckMode}-${Global.opiAppId}`, onItemClick: () => {
-                this.appCheckModeDialog?.open();
-              }
-            })
+          // 日志打印
+          SingleItem({
+            title: '是否关闭日志打印功能',
+            item: this.isEnableLog ? '开启' : '关闭', onItemClick: () => {
+              const next = !this.isEnableLog;
+              SPUtils.setBool('enableLog', next);
+              this.isEnableLog = next;
+              OpenApiSdk.logApi?.setLogEnable(next);
+              ToastUtil.show(`已切换为${next ? '开启状态' : '关闭状态'}`);
+            }
+          })
 
-            // 日志打印
-            SingleItem({
-              title: '是否关闭日志打印功能',
-              item: this.isEnableLog ? '开启' : '关闭', onItemClick: () => {
-                const next = !this.isEnableLog;
-                SPUtils.setBool('enableLog', next);
-                this.isEnableLog = next;
-                OpenApiSdk.logApi?.setLogEnable(next);
-                ToastUtil.show(`已切换为${next ? '开启状态' : '关闭状态'}`);
-              }
-            })
+          // 允许抓包
+          SingleItem({
+            title: '允许抓包',
+            item: this.enableHttpDns ? CLOSE : OPEN, onItemClick: () => {
+              const next = !this.enableHttpDns;
+              SPUtils.setBool('enableHttpDns', next);
+              // TODO(chezijian): 鸿蒙侧 Global.enableHttpDns 不存在 , 暂时注释;
+              // Global.enableHttpDns = next;
+              this.enableHttpDns = next;
+              ToastUtil.show(`已${next ? CLOSE : OPEN}`);
+            }
+          })
 
-            // 允许抓包
-            SingleItem({
-              title: '允许抓包',
-              item: this.enableHttpDns ? CLOSE : OPEN, onItemClick: () => {
-                const next = !this.enableHttpDns;
-                SPUtils.setBool('enableHttpDns', next);
-                // TODO(chezijian): 鸿蒙侧 Global.enableHttpDns 不存在 , 暂时注释;
-                // Global.enableHttpDns = next;
-                this.enableHttpDns = next;
-                ToastUtil.show(`已${next ? CLOSE : OPEN}`);
-              }
-            })
+          // 切换环境
+          SingleItem({
+            title: '切换环境', item: this.curEnv, onItemClick: () => {
+              this.toggleEnv();
+            }
+          })
 
-            // 切换环境
-            SingleItem({
-              title: '切换环境', item: this.curEnv, onItemClick: () => {
-                this.toggleEnv();
-              }
-            })
+          // 切换域名
+          SingleItem({
+            title: '切换域名', item: this.curDomain, onItemClick: () => {
+              this.domainDialog?.open();
+            }
+          })
 
-            // 切换域名
-            SingleItem({
-              title: '切换域名', item: this.curDomain, onItemClick: () => {
-                this.domainDialog?.open();
-              }
-            })
-
-            // 选择DevOps
-            SingleItem({
-              title: '选择DevOps', item: this.curDevopsName, onItemClick: () => {
-                this.viewModel.loadDevopsList()
-                  .then(() => {
-                    this.devopsDialog?.open();
-                  })
-                  .catch(() => {
-                    ToastUtil.show('获取DevOps列表失败');
-                  })
-              }
-            })
-            // 切换TDE测试环境
-            SingleItem({
-              title: '切换TDE测试环境',
-              item: this.tdeEnv ? OPEN : CLOSE, onItemClick: () => {
-                const next = !this.tdeEnv;
-                SPUtils.setBool('enableTdeEnv', next);
-                this.tdeEnv = next;
-                ToastUtil.show(`已${next ? OPEN : CLOSE}`);
-              }
-            })
-
-            // 切换WNS环境
-            SingleItem({
-              title: '切换WNS环境', item: this.curWnsEnv, onItemClick: () => {
-                this.toggleWnsEnv();
-              }
-            })
-
-            // 是否启用IPC
-            // TODO: 鸿蒙侧 IPC 对应 API 待确认
-            SingleItem({
-              title: '是否启用IPC(仅当前生命周期有效)',
-              item: this.useIpc ? OPEN : CLOSE, onItemClick: () => {
-                this.useIpc = !this.useIpc;
-                ToastUtil.show('切换成功,仅当前生命周期有效');
-              }
-            })
-
-            // OpenApi接口
-            SingleItem({
-              title: 'OpenApi接口', item: '', onItemClick: () => {
-                const params: Record<string, boolean> = { 'isDebug': true };
-                NavController.getInstance().push(RouteName.OPEN_API_DEMO_PAGE, params);
-              }
-            })
-
-            // Player播放调试页
-            SingleItem({
-              title: 'Player播放调试页', item: '', onItemClick: () => {
-                NavController.getInstance().push(RouteName.MUSIC_TEST_PAGE);
-              }
-            })
-
-            // 设置Log存储路径
-            SingleItem({
-              title: '设置Log存储路径', item: '', onItemClick: () => {
-                this.logDirDialog?.open();
-              }
-            })
-
-            // 清空大票
-            SingleItem({
-              title: '点击清空大票', item: '', onItemClick: () => {
-                const source = OpenApiSdk.loginApi?.getOpenIdInfo();
-                if (source) {
-                  const openIdInfo = new OpenIdInfo(
-                    source.expireTime,
-                    source.accessToken,
-                    source.openId,
-                    '', // refreshToken 置空
-                    source.type
-                  );
-                  openIdInfo.loginToken = source.loginToken;
-                  openIdInfo.partnerToken = source.partnerToken;
-                  openIdInfo.loginType = source.loginType;
-                  openIdInfo.scanApp = source.scanApp;
-                  openIdInfo.musicId = source.musicId;
-                  openIdInfo.openAppId = source.openAppId;
-                  openIdInfo.accType = source.accType;
-                  OpenApiSdk.loginApi?.updateOpenIdInfo(openIdInfo, openIdInfo.type ?? AuthType.UNKNOWN);
-                }
-                ToastUtil.show(`操作成功，refreshToken=${OpenApiSdk.loginApi?.getOpenIdInfo()?.refreshToken}`);
-              }
-            })
-
-            // 测试小票过期
-            SingleItem({
-              title: '测试小票过期', item: '点击选择登录方式', onItemClick: () => {
-                this.loginTypeDialog?.open();
-              }
-            })
-            // 播放页操作前进行暂停
-            SingleItem({
-              title: '播放页操作前进行暂停',
-              item: this.tryPauseFirst.toString(), onItemClick: () => {
-                const next = !this.tryPauseFirst;
-                SPUtils.setBool('tryPauseFirst', next);
-                this.tryPauseFirst = next;
-                ToastUtil.show('设置成功，重启生效');
-              }
-            })
-
-            // 设置SessionActivity
-            SingleItem({
-              title: '设置SessionActivity', item: '', onItemClick: () => {
-                // this.sessionActivityDialog?.open();
-                ToastUtil.show('暂不支持 【设置SessionActivity】');
-              }
-            })
-
-            // ========== Crash测试 & 初始化/销毁 ==========
-            Row({ space: 8 }) {
-              Button('立即Crash!').fontSize(12).height(36)
-                .onClick(() => {
-                  OpenApiSdk.fireEyeApi?.testJavaCrash();
+          // 选择DevOps
+          SingleItem({
+            title: '选择DevOps', item: this.curDevopsName, onItemClick: () => {
+              this.viewModel.loadDevopsList()
+                .then(() => {
+                  this.devopsDialog?.open();
                 })
-              Button('Native').fontSize(12).height(36)
-                .onClick(() => {
-                  OpenApiSdk.fireEyeApi?.testNativeCrash();
-                })
-              Button('ANR').fontSize(12).height(36)
-                .onClick(() => {
-                  OpenApiSdk.fireEyeApi?.testANRCrash();
-                })
-              Button('清理臻品乐航资源').fontSize(12).height(36)
-                .onClick(() => {
-                  ToastUtil.show('暂未实现');
+                .catch(() => {
+                  ToastUtil.show('获取DevOps列表失败');
                 })
             }
-            .width('100%')
-            .padding({
-              left: 16,
-              right: 16,
-              top: 12,
-              bottom: 8
-            })
-
-            Row({ space: 8 }) {
-              Button('初始化SDK').fontSize(12).height(36)
-                .onClick(() => {
-                  ToastUtil.show('初始化成功');
-                })
-              Button('销毁SDK').fontSize(12).height(36)
-                .onClick(() => {
-                  OpenApiSdk.destroy();
-                  ToastUtil.show('销毁成功');
-                })
-              Button('销毁播放服务').fontSize(12).height(36)
-                .onClick(() => {
-                  ToastUtil.show('暂未实现');
-                })
+          })
+          // 切换TDE测试环境
+          SingleItem({
+            title: '切换TDE测试环境',
+            item: this.tdeEnv ? OPEN : CLOSE, onItemClick: () => {
+              const next = !this.tdeEnv;
+              SPUtils.setBool('enableTdeEnv', next);
+              this.tdeEnv = next;
+              ToastUtil.show(`已${next ? OPEN : CLOSE}`);
             }
-            .width('100%')
-            .padding({ left: 16, right: 16, bottom: 12 })
+          })
 
-            Blank().height(30)
+          // 切换WNS环境
+          SingleItem({
+            title: '切换WNS环境', item: this.curWnsEnv, onItemClick: () => {
+              this.toggleWnsEnv();
+            }
+          })
+
+          // 是否启用IPC
+          // TODO: 鸿蒙侧 IPC 对应 API 待确认
+          SingleItem({
+            title: '是否启用IPC(仅当前生命周期有效)',
+            item: this.useIpc ? OPEN : CLOSE, onItemClick: () => {
+              this.useIpc = !this.useIpc;
+              ToastUtil.show('切换成功,仅当前生命周期有效');
+            }
+          })
+
+          // OpenApi接口
+          SingleItem({
+            title: 'OpenApi接口', item: '', onItemClick: () => {
+              const params: Record<string, boolean> = { 'isDebug': true };
+              NavController.getInstance().push(RouteName.OPEN_API_DEMO_PAGE, params);
+            }
+          })
+
+          // Player播放调试页
+          SingleItem({
+            title: 'Player播放调试页', item: '', onItemClick: () => {
+              NavController.getInstance().push(RouteName.MUSIC_TEST_PAGE);
+            }
+          })
+
+          // 设置Log存储路径
+          SingleItem({
+            title: '设置Log存储路径', item: '', onItemClick: () => {
+              this.logDirDialog?.open();
+            }
+          })
+
+          // 清空大票
+          SingleItem({
+            title: '点击清空大票', item: '', onItemClick: () => {
+              const source = OpenApiSdk.loginApi?.getOpenIdInfo();
+              if (source) {
+                const openIdInfo = new OpenIdInfo(
+                  source.expireTime,
+                  source.accessToken,
+                  source.openId,
+                  '', // refreshToken 置空
+                  source.type
+                );
+                openIdInfo.loginToken = source.loginToken;
+                openIdInfo.partnerToken = source.partnerToken;
+                openIdInfo.loginType = source.loginType;
+                openIdInfo.scanApp = source.scanApp;
+                openIdInfo.musicId = source.musicId;
+                openIdInfo.openAppId = source.openAppId;
+                openIdInfo.accType = source.accType;
+                OpenApiSdk.loginApi?.updateOpenIdInfo(openIdInfo, openIdInfo.type ?? AuthType.UNKNOWN);
+              }
+              ToastUtil.show(`操作成功，refreshToken=${OpenApiSdk.loginApi?.getOpenIdInfo()?.refreshToken}`);
+            }
+          })
+
+          // 测试小票过期
+          SingleItem({
+            title: '测试小票过期', item: '点击选择登录方式', onItemClick: () => {
+              this.loginTypeDialog?.open();
+            }
+          })
+          // 播放页操作前进行暂停
+          SingleItem({
+            title: '播放页操作前进行暂停',
+            item: this.tryPauseFirst.toString(), onItemClick: () => {
+              const next = !this.tryPauseFirst;
+              SPUtils.setBool('tryPauseFirst', next);
+              this.tryPauseFirst = next;
+              ToastUtil.show('设置成功，重启生效');
+            }
+          })
+
+          // 设置SessionActivity
+          SingleItem({
+            title: '设置SessionActivity', item: '', onItemClick: () => {
+              // this.sessionActivityDialog?.open();
+              ToastUtil.show('暂不支持 【设置SessionActivity】');
+            }
+          })
+
+          // ========== Crash测试 & 初始化/销毁 ==========
+          Row({ space: 8 }) {
+            Button('立即Crash!').fontSize(12).height(36)
+              .onClick(() => {
+                OpenApiSdk.fireEyeApi?.testJavaCrash();
+              })
+            Button('Native').fontSize(12).height(36)
+              .onClick(() => {
+                OpenApiSdk.fireEyeApi?.testNativeCrash();
+              })
+            Button('ANR').fontSize(12).height(36)
+              .onClick(() => {
+                OpenApiSdk.fireEyeApi?.testANRCrash();
+              })
+            Button('清理臻品乐航资源').fontSize(12).height(36)
+              .onClick(() => {
+                ToastUtil.show('暂未实现');
+              })
           }
           .width('100%')
+          .padding({
+            left: 16,
+            right: 16,
+            top: 12,
+            bottom: 8
+          })
+
+          Row({ space: 8 }) {
+            Button('初始化SDK').fontSize(12).height(36)
+              .onClick(() => {
+                ToastUtil.show('初始化成功');
+              })
+            Button('销毁SDK').fontSize(12).height(36)
+              .onClick(() => {
+                OpenApiSdk.destroy();
+                ToastUtil.show('销毁成功');
+              })
+            Button('销毁播放服务').fontSize(12).height(36)
+              .onClick(() => {
+                ToastUtil.show('暂未实现');
+              })
+          }
+          .width('100%')
+          .padding({ left: 16, right: 16, bottom: 12 })
+
+          Blank().height(30)
         }
         .width('100%')
-        .layoutWeight(1)
-        .scrollBar(BarState.Off)
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#F5F5F5')
+      .scrollBar(BarState.Off)
     }
-    .hideTitleBar(true)
+    .title('debug调试页')
+    .backgroundColor('#F5F5F5')
   }
 }
 
