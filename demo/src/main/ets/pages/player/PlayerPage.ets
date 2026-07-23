@@ -9,13 +9,15 @@ import { ISoundEffectItem, PlayError, PlayStatus, VipType } from '@qqmusic/opisd
 import { SeekbarComponent } from '../player/SeekbarComponent'
 import { OpenApiSdk } from '@qqmusic/opisdk-base'
 import { LyricManager } from '@qqmusic/opisdk-lyricview'
+import { SPUtils } from '../../utils/SPUtils'
+import { CoverHelper } from '../../utils/CoverHelper'
 
 const TAG = 'PlayerPage'
 
 /**
  * 全屏播放页面
  *
- * 布局：封面 | 歌曲信息 | 歌词 | 品质/下载/收藏/音效 | 进度条 | 播放控制 | 状态文本 | 测试入口
+ * 布局：封面 | 歌曲信息 | 歌词 | 品质/下载/收藏/音效/MV | 进度条 | 播放控制 | 状态文本 | 右侧悬浮入口
  */
 @ComponentV2
 export struct PlayerPage {
@@ -42,158 +44,132 @@ export struct PlayerPage {
         .fontColor('#888888')
     }
     .width('100%')
-    .height(200)
+    .height('100%')
     .justifyContent(FlexAlign.Center)
     .alignItems(HorizontalAlign.Center)
   }
 
   build() {
     NavDestination() {
-      Column() {
-        // 顶部标题栏
-        this.buildTopBar()
+      Stack() {
+        Column() {
+          // 顶部标题栏
+          this.buildTopBar()
 
-        // 可滚动内容
-        Scroll() {
-          Column({ space: 0 }) {
-            // 封面
-            this.buildCover()
+          // 封面
+          this.buildCover()
 
-            // 歌曲名
-            Text(this.model.songName)
-              .fontSize(20)
-              .fontWeight(FontWeight.Bold)
-              .fontColor('#333333')
-              .margin({ top: 16 })
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-              .width('90%')
-              .textAlign(TextAlign.Center)
+          // 歌曲名
+          Text(this.model.songName)
+            .fontSize(18)
+            .fontWeight(FontWeight.Bold)
+            .fontColor('#333333')
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .width('80%')
+            .textAlign(TextAlign.Center)
+            .margin({ top: 8 })
 
-            // 歌手名
-            Text(this.model.singerName)
-              .fontSize(14)
-              .fontColor('#666666')
-              .margin({ top: 6 })
-              .maxLines(1)
-              .textOverflow({ overflow: TextOverflow.Ellipsis })
-              .onClick(() => {
-                ToastUtil.show(`歌手: ${this.model.singerName}`)
-              })
+          // 歌手名
+          Text(this.model.singerName)
+            .fontSize(13)
+            .fontColor('#666666')
+            .maxLines(1)
+            .textOverflow({ overflow: TextOverflow.Ellipsis })
+            .onClick(() => {
+              ToastUtil.show(`歌手: ${this.model.singerName}`)
+            })
+            .margin({ top: 2 })
 
-            // 歌词区域
-            this.buildLyricArea()
+          // 歌词区域（占剩余空间）
+          this.buildLyricArea()
 
-            // 操作按钮行：品质 / 下载 / 收藏 / 音效
-            this.buildActionRow()
+          // 操作按钮行：品质 / 下载 / 收藏 / MV / 音效
+          this.buildActionRow()
+          // 进度条
+          this.buildProgressBar()
 
-            // 进度条
-            this.buildProgressBar()
+          // 播放控制行：模式 | 上一曲 | 播放暂停 | 下一曲 | 列表
+          this.buildPlayControlRow()
 
-            // 播放控制行：模式 | 上一曲 | 播放暂停 | 下一曲 | 列表
-            this.buildPlayControlRow()
+          // 播放状态文本
+          Text(this.model.playStateText)
+            .fontSize(11)
+            .fontColor('#AAAAAA')
 
-            // 播放状态文本
-            Text(this.model.playStateText)
-              .fontSize(12)
-              .fontColor('#AAAAAA')
-              .margin({ top: 8 })
-            // 时长信息
-            Text(`A:${this.model.formatTime(this.model.actualDuration)} T:${this.model.formatTime(this.model.duration)}`)
-              .fontSize(11)
+          // 时长信息
+          Text(`A:${this.model.formatTime(this.model.actualDuration)} T:${this.model.formatTime(this.model.duration)}`)
+            .fontSize(10)
+            .fontColor('#BBBBBB')
+
+          // 倍速信息
+          if (this.model.playSpeed !== 1.0) {
+            Text(`倍速: ${this.model.playSpeed.toFixed(1)}x`)
+              .fontSize(10)
               .fontColor('#BBBBBB')
-              .margin({ top: 4 })
-            // 倍速信息
-            if (this.model.playSpeed !== 1.0) {
-              Text(`倍速: ${this.model.playSpeed.toFixed(1)}x`)
-                .fontSize(11)
-                .fontColor('#BBBBBB')
-                .margin({ top: 4 })
-            }
-
-            // 测试入口
-            this.buildTestButtons()
           }
-          .width('100%')
-          .alignItems(HorizontalAlign.Center)
-          .padding({ bottom: 40 })
         }
-        .scrollable(ScrollDirection.Vertical)
-        .scrollBar(BarState.Off)
-        .layoutWeight(1)
+        .width('100%')
+        .height('100%')
+        .alignItems(HorizontalAlign.Center)
+        .justifyContent(FlexAlign.SpaceAround)
+
+        // 右侧悬浮入口
+        this.buildRightEntries()
       }
       .width('100%')
       .height('100%')
-      .backgroundColor('#FAFAFA')
     }
+    .backgroundColor('#FAFAFA')
     .hideTitleBar(true)
   }
 
   @Builder
   buildCover() {
-    Image(this.model.coverUrl)
-      .width(280)
-      .height(280)
+    Image(CoverHelper.getCoverUrl(this.model.currentSong))
+      .width(200)
+      .height(200)
       .objectFit(ImageFit.Cover)
-      .borderRadius(20)
+      .borderRadius(16)
       .backgroundColor('#E0E0E0')
       .margin({ top: 16 })
-      .shadow({ radius: 20, color: '#33000000', offsetY: 8 })
+      .shadow({ radius: 16, color: '#33000000', offsetY: 6 })
   }
 
   @Builder
   buildLyricArea() {
-    if (this.model.currentState === PlayStatus.PLAYING || this.model.currentState === PlayStatus.PAUSE) {
-      // 正常歌词显示
-      Column() {
-        LyricView({
-          lineTextParam: new LyricTextParam(16, 20, false, 0x7F000000),
-          highlightTextParam: new LyricTextParam(20, 28, true, 0xFF000000, 0xFFFF0000),
-          paddingTop: 10,
-          lineSpace: 16,
-          enableInteraction: false,
-          enableWordByWord: false,
-          scrollAlign: ScrollAlign.CENTER,
-          emptyView: this.lyricEmptyView
-        })
-      }
-      .hitTestBehavior(HitTestMode.Block)
-      .onClick(() => {
-        NavController.getInstance().push(RouteName.LYRIC_TEST_PAGE);
+    // 正常歌词显示
+    Column() {
+      LyricView({
+        lineTextParam: new LyricTextParam(16, 20, false, 0x7F000000),
+        highlightTextParam: new LyricTextParam(20, 28, true, 0xFF000000, 0xFFFF0000),
+        paddingTop: 10,
+        lineSpace: 16,
+        enableInteraction: false,
+        enableWordByWord: false,
+        scrollAlign: ScrollAlign.CENTER,
+        emptyView: this.lyricEmptyView,
+        lyricTextAlign: TextAlign.Center
       })
-      .height(200)
-      .borderRadius(12)
-      .backgroundColor('#F5F5F5')
-      .margin({ top: 12 })
-    } else {
-      // 歌词加载中状态
-      Column() {
-        LoadingProgress()
-          .width(32)
-          .height(32)
-          .color('#6200EE')
-        Text('歌词加载中...')
-          .fontSize(12)
-          .fontColor('#888888')
-          .margin({ top: 8 })
-      }
-      .width('100%')
-      .height(200)
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center)
-      .borderRadius(12)
-      .backgroundColor('#F5F5F5')
-      .hitTestBehavior(HitTestMode.Block)
-      .onClick(() => {
-        NavController.getInstance().push(RouteName.LYRIC_TEST_PAGE);
-      })
-      .margin({ top: 12 })
     }
+    .hitTestBehavior(HitTestMode.Block)
+    .onClick(() => {
+      NavController.getInstance().push(RouteName.LYRIC_TEST_PAGE);
+    })
+    .height(200)
+    .borderRadius(12)
+    .margin({ top: 12 })
   }
 
   @Builder
   buildTopBar() {
-    Row() {
+    Stack({ alignContent: Alignment.Start }) {
+      Text('播放页')
+        .fontSize(18)
+        .fontWeight(FontWeight.Bold)
+        .textAlign(TextAlign.Center)
+        .width('100%')
+
       Image($r('app.media.icon_back_placeholder'))
         .width(24)
         .height(24)
@@ -201,15 +177,8 @@ export struct PlayerPage {
           this.navController.pop()
         })
         .margin({ left: 16, top: 12, bottom: 12 })
-
-      Text('播放页')
-        .fontSize(18)
-        .fontWeight(FontWeight.Bold)
-        .layoutWeight(1)
-        .textAlign(TextAlign.Center)
     }
     .width('100%')
-    .backgroundColor(Color.White)
   }
 
   @Builder
@@ -217,7 +186,7 @@ export struct PlayerPage {
     Row() {
       // 品质 - 点击打开音质弹窗
       Text(this.model.getQualityText(this.model.currentQuality))
-        .fontSize(16)
+        .fontSize(14)
         .fontColor('#666666')
         .onClick(() => {
           this.qualitySheetVisible = true;
@@ -233,24 +202,36 @@ export struct PlayerPage {
 
       // 下载
       Image($r('app.media.icon_player_download_light'))
-        .width(45)
-        .height(45)
+        .width(36)
+        .height(36)
         .onClick(() => {
           ToastUtil.show('下载功能开发中')
         })
 
       // 收藏
       Image(this.model.isFavorite ? $r('app.media.ic_heart_red') : $r('app.media.ic_heart'))
-        .width(45)
-        .height(45)
+        .width(36)
+        .height(36)
         .onClick(() => {
           this.model.toggleFavorite()
         })
 
-      // 音效
+      // MV
+      Image($r('app.media.ic_player_mv'))
+        .width(48)
+        .height(48)
+        .onClick(() => {
+          if (this.model.hasMvVid) {
+            const params = new MVPlayerPageParams(this.model.currentSong?.getMvVid() ?? '')
+            this.navController.push(RouteName.MV_PLAYER_PAGE, params)
+          } else {
+            ToastUtil.show('该歌曲没有MV可以播放')
+          }
+        })
 
+      // 音效
       Text('音效')
-        .fontSize(16)
+        .fontSize(14)
         .fontColor('#666666')
         .onClick(() => {
           this.model.getSoundEffect();
@@ -270,10 +251,10 @@ export struct PlayerPage {
     .justifyContent(FlexAlign.SpaceAround)
     .width('100%')
     .padding({
-      left: 20,
-      right: 20,
-      top: 16,
-      bottom: 16
+      left: 16,
+      right: 16,
+      top: 10,
+      bottom: 10
     })
   }
 
@@ -309,7 +290,7 @@ export struct PlayerPage {
         .textAlign(TextAlign.Center)
     }
     .width('100%')
-    .padding({ left: 16, right: 16, top: 12 })
+    .padding({ left: 16, right: 16 })
   }
 
   @Builder
@@ -318,58 +299,98 @@ export struct PlayerPage {
       // 播放模式 - 根据模式展示不同图标和文本
       Column({ space: 2 }) {
         Image(this.model.modeIcon)
-          .width(30)
-          .height(30)
+          .width(28)
+          .height(28)
           .objectFit(ImageFit.Contain)
         Text(this.model.modeText)
           .fontSize(9)
           .fontColor('#666666')
       }
       .alignItems(HorizontalAlign.Center)
-      .margin({ right: 16 })
+      .margin({ right: 12 })
       .onClick(() => {
         this.model.cyclePlayMode()
       })
 
       // 上一曲
       Image($r('app.media.icon_back_placeholder'))
-        .width(44)
-        .height(44)
-        .margin({ right: 16 })
+        .width(40)
+        .height(40)
+        .margin({ right: 12 })
         .onClick(() => {
           this.model.prev()
         })
 
       // 播放/暂停
       Image(this.model.isPlaying ? $r('app.media.ic_state_playing') : $r('app.media.ic_state_paused'))
-        .width(60)
-        .height(60)
-        .margin({ right: 16 })
+        .width(56)
+        .height(56)
+        .margin({ right: 12 })
         .onClick(() => {
           this.model.playPause()
         })
 
       // 下一曲
       Image($r('app.media.icon_back_placeholder'))
-        .width(44)
-        .height(44)
+        .width(40)
+        .height(40)
         .rotate({ angle: 180 })
-        .margin({ right: 16 })
+        .margin({ right: 12 })
         .onClick(() => {
           this.model.next()
         })
 
       // 播放列表
       Image($r('app.media.ic_playlist'))
-        .width(28)
-        .height(28)
+        .width(26)
+        .height(26)
         .onClick(() => {
           this.navController.push(RouteName.PLAY_LIST_PAGE)
         })
     }
     .justifyContent(FlexAlign.Center)
     .width('100%')
-    .padding({ top: 12 })
+  }
+
+  /**
+   * 右侧悬浮入口：测试页、新版播放页
+   */
+  @Builder
+  buildRightEntries() {
+    Column({ space: 8 }) {
+      // 进入播放测试页
+      Text('播放测试页')
+        .fontSize(10)
+        .fontColor('#FFFFFF')
+        .textAlign(TextAlign.Center)
+        .width(50)
+        .height(50)
+        .padding(4)
+        .borderRadius(4)
+        .backgroundColor(Color.Blue)
+        .borderRadius(4)
+        .onClick(() => {
+          this.navController.push(RouteName.MUSIC_TEST_PAGE)
+        })
+
+      // 新版播放页
+      Text('新版播放器')
+        .fontSize(10)
+        .fontColor('#FFFFFF')
+        .textAlign(TextAlign.Center)
+        .width(50)
+        .height(50)
+        .padding(4)
+        .borderRadius(4)
+        .backgroundColor(Color.Blue)
+        .onClick(() => {
+          SPUtils.setBool('newPlayerPage', true)
+          this.navController.pop()
+          this.navController.push(RouteName.PLAYER_NEW_PAGE)
+        })
+    }
+    .alignItems(HorizontalAlign.Center)
+    .position({ right: 12, top: '20%' })
   }
 
   /**
@@ -443,8 +464,8 @@ export struct PlayerPage {
   }
 
   /**
-   * 音质选择弹窗
-   * 显示当前歌曲支持的所有音质，当前音质高亮标记
+   * 音效选择弹窗
+   * 显示当前歌曲支持的所有音效，当前音效高亮标记
    */
   @Builder
   buildEffectSheet() {
@@ -578,30 +599,6 @@ export struct PlayerPage {
       .padding({ bottom: 24 })
     }
     .width('100%')
-  }
-
-  @Builder
-  buildTestButtons() {
-    Column({ space: 8 }) {
-      Button('进入播放测试页')
-        .fontSize(14)
-        .onClick(() => {
-          this.navController.push(RouteName.MUSIC_TEST_PAGE)
-        })
-        .margin({ top: 16 })
-
-      Button('播放MV')
-        .fontSize(14)
-        .onClick(() => {
-          if (this.model.hasMvVid) {
-            const params = new MVPlayerPageParams(this.model.currentSong?.getMvVid() ?? '')
-            this.navController.push(RouteName.MV_PLAYER_PAGE, params)
-          } else {
-            ToastUtil.show('该歌曲没有MV可以播放')
-          }
-        })
-    }
-    .alignItems(HorizontalAlign.Center)
   }
 }
 

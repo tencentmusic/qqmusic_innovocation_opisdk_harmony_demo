@@ -317,12 +317,6 @@ export class PlayerViewModel implements IMediaEventListener, IProgressChangeList
     return this.currentSong?.getSingerName() ?? '未知'
   }
 
-  /** 封面 URL（大图优先） */
-  get coverUrl(): string {
-    const url = this.currentSong?.getAlbumPicUrlBySize?.('1500') ?? ''
-    return url.length > 0 ? url : (this.currentSong?.bigCoverUrl() ?? '')
-  }
-
   /** 是否有 MV */
   get hasMvVid(): boolean {
     const mvVid = this.currentSong?.getMvVid()

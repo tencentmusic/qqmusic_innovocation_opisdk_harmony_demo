@@ -20,7 +20,6 @@ import {
   BaseBusinessEvent,
   LoginEvent
 } from '@qqmusic/opisdk-entity'
-import { HomepageRecommendation } from '@qqmusic/opisdk-openapi'
 import { ISongInfo, ISinger, MusicListType, PlayError } from '@qqmusic/opisdk-qmutils'
 
 const TAG = 'HomeViewModel'
@@ -245,6 +244,54 @@ export class HomeViewModel implements BusinessEventHandler {
     const result = OpenApiSdk.playerApi?.playSongs(playParam) ?? -1
     if (result !== PlayError.PLAY_ERR_NONE) {
       MLog.w(TAG, `playRecommendSongs failed, error: ${result}`)
+    }
+  }
+
+  /**
+   * 根据 contentId 播放 Banner 歌曲
+   * @param contentId Banner 的 contentId
+   * @param songName 歌曲名称
+   */
+  async playBannerSong(contentId: string, songName: string): Promise<void> {
+    const songId = Number(contentId)
+    if (isNaN(songId) || songId === 0) {
+      MLog.w(TAG, `playBannerSong: invalid contentId=${contentId}`)
+      return
+    }
+    try {
+      const resp = await OpenApiSdk.openApi?.songApi.fetchSongInfoBatch([songId])
+      if (resp && resp.isSuccess() && resp.data && resp.data.length > 0) {
+        const songList = resp.data
+        const playParam: IPlayParam = {
+          playListType: MusicListType.TYPE_ONLINE,
+          playListTypeId: 0,
+          songList: songList,
+          startPos: 0,
+          startPlay: true
+        }
+        const result = OpenApiSdk.playerApi?.playSongs(playParam) ?? -1
+        if (result !== PlayError.PLAY_ERR_NONE) {
+          MLog.w(TAG, `playBannerSong failed, error: ${result}, song: ${songName}`)
+        } else {
+          MLog.i(TAG, `playBannerSong success: ${songName}`)
+        }
+      } else {
+        MLog.w(TAG, `playBannerSong fetchSongInfoBatch failed: ${resp?.errorMsg}`)
+      }
+    } catch (e) {
+      MLog.e(TAG, `playBannerSong error: ${JSON.stringify(e)}`)
+    }
+  }
+
+  /**
+   * 播放 Banner 电台
+   */
+  playBannerRadio(): void {
+    const result = OpenApiSdk.playerApi?.playRadio(undefined, undefined, true) ?? -1
+    if (result !== PlayError.PLAY_ERR_NONE) {
+      MLog.w(TAG, `playBannerRadio failed, error: ${result}`)
+    } else {
+      MLog.i(TAG, 'playBannerRadio success')
     }
   }
 

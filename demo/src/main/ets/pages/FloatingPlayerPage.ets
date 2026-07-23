@@ -4,6 +4,8 @@ import { RouteName } from '../nav/RouteMap'
 import { LyricView } from '@qqmusic/opisdk-lyricview'
 import { LyricTextParam } from '@qqmusic/opisdk-lyricview'
 import { AppUtil } from '../utils/AppUtil'
+import { SPUtils } from '../utils/SPUtils'
+import { CoverHelper } from '../utils/CoverHelper'
 
 /**
  * 悬浮播放器页面
@@ -17,10 +19,6 @@ export struct FloatingPlayerPage {
 
   private get songName(): string {
     return this.viewModel.currentSong?.getSongName() ?? ''
-  }
-
-  private get coverUrl(): string {
-    return this.viewModel.currentSong?.smallCoverUrl() ?? ''
   }
 
   private get isVip(): boolean {
@@ -49,7 +47,7 @@ export struct FloatingPlayerPage {
     Column() {
       Row() {
         // 封面
-        Image(this.coverUrl)
+        Image(CoverHelper.getCoverUrl(this.viewModel.currentSong))
           .width(60)
           .height(60)
           .objectFit(ImageFit.Cover)
@@ -135,7 +133,13 @@ export struct FloatingPlayerPage {
     .shadow({ radius: 10, color: Color.Gray })
     .margin({ bottom: this.navController.isAtHome ? 56 : -AppUtil.bottomSafeArea })
     .onClick(() => {
-      this.navController.push(RouteName.PLAYER_PAGE)
+      // 根据 newPlayerPage 开关选择跳转新版或旧版播放页
+      const useNewPage = SPUtils.getBool('newPlayerPage', false)
+      if (useNewPage) {
+        this.navController.push(RouteName.PLAYER_NEW_PAGE)
+      } else {
+        this.navController.push(RouteName.PLAYER_PAGE)
+      }
     })
   }
 }

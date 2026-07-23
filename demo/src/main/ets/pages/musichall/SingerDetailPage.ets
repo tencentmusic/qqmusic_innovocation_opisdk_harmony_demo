@@ -5,10 +5,11 @@ import { IAlbum, ISingerWiki } from '@qqmusic/opisdk-entity'
 import { MusicListType } from '@qqmusic/opisdk-qmutils'
 import { RouteName } from '../../nav/RouteMap'
 import { SongListItemView } from '../../view/songlist/SongListItemView'
-import { SimpleSongListToolbar } from '../../view/songlist/SimpleSongListToolbar'
 import { OpenApiSdk, MLog } from '@qqmusic/opisdk-base'
 import { SongListPageParams } from '../../nav/RouteParams'
 import { AppUtil } from '../../utils/AppUtil'
+import { SongListToolbar } from '../../view/songlist/SongListToolbar'
+import { CopyableInfoField } from '../../view/common/CopyableInfoField'
 
 const TAG = 'SingerDetailPage'
 
@@ -25,9 +26,6 @@ class WikiEntry {
 
 /**
  * 歌手详情页
- * 包含：歌手信息头部、歌曲/专辑 Tab 切换
- * 歌曲 Tab：复用 SongListViewModel + SongListItemView
- * 专辑 Tab：独立加载歌手专辑列表
  */
 @ComponentV2
 export struct SingerDetailPage {
@@ -39,10 +37,12 @@ export struct SingerDetailPage {
   @Local albumHasMore: boolean = true
   @Local albumPage: number = 0
   @Local albumTotalCount: number = 0
+  @Local isWikiExpanded: boolean = false
   private readonly albumPageSize: number = 20
   private singerId: number = 0
   private singerMid: string = ''
   private singerName: string = ''
+  private scroller: ListScroller = new ListScroller()
 
   aboutToAppear(): void {
     const size = this.navController.navPathStack.size()
@@ -58,7 +58,6 @@ export struct SingerDetailPage {
         this.viewModel.listName = raw.singerName
         this.viewModel.showSimpleToolbar = true
         this.viewModel.fetchAlbumDetail()
-        this.viewModel.loadSongs()
         // 预加载专辑列表第一页，获取专辑总数用于 Tab 展示
         this.loadAlbums()
       }
@@ -76,29 +75,39 @@ export struct SingerDetailPage {
         // 顶部标题栏
         this.buildHeader()
 
-        // 可滚动内容区（歌手信息 + Tab + 列表）
-        Scroll() {
-          Column({ space: 0 }) {
-            // 歌手信息卡片
+        List({ space: 0, scroller: this.scroller }) {
+          // 歌手信息卡片
+          ListItem() {
             this.buildSingerInfoCard()
+          }
 
-            // Tab 切换栏
-            this.buildTabBar()
-
+          ListItemGroup({ space: 0, header: this.buildStickyHeader }) {
             // Tab 内容区
             if (this.currentTabIndex === 0) {
-              this.buildSongTab()
+              this.buildSongTabItems()
             } else {
-              this.buildAlbumTab()
+              this.buildAlbumTabItems()
             }
           }
-          .width('100%')
         }
-        .scrollable(ScrollDirection.Vertical)
-        .scrollBar(BarState.Off)
+        .sticky(StickyStyle.Header)
         .width('100%')
         .layoutWeight(1)
+        .scrollBar(BarState.Off)
         .edgeEffect(EdgeEffect.Spring)
+        .onReachEnd(() => {
+          if (this.currentTabIndex === 0) {
+            if (this.viewModel.isLoading || this.viewModel.songList.length === 0) {
+              return
+            }
+            this.viewModel.loadSongs(true)
+          } else {
+            if (this.isLoadingAlbums || this.albumList.length === 0) {
+              return
+            }
+            this.loadAlbums(true)
+          }
+        })
       }
       .width('100%')
       .height('100%')
@@ -107,6 +116,7 @@ export struct SingerDetailPage {
     }
     .hideTitleBar(true)
   }
+
   @Builder
   buildHeader() {
     Row() {
@@ -133,6 +143,20 @@ export struct SingerDetailPage {
     .padding({ left: 16, right: 16 })
     .backgroundColor(Color.White)
   }
+
+  @Builder
+  buildStickyHeader() {
+    Column() {
+      // Tab 切换栏
+      this.buildTabBar()
+      // 歌曲列表工具栏
+      if (this.currentTabIndex === 0 && this.viewModel.songList.length > 0) {
+        SongListToolbar()
+      }
+    }
+    .backgroundColor(Color.White)
+  }
+
   @Builder
   buildTabBar() {
     Row() {
@@ -155,7 +179,10 @@ export struct SingerDetailPage {
       .height(44)
       .justifyContent(FlexAlign.Center)
       .onClick(() => {
-        this.currentTabIndex = 0
+        if (this.currentTabIndex !== 0) {
+          this.currentTabIndex = 0
+          this.scrollToSticky()
+        }
       })
 
       // 专辑 Tab
@@ -177,9 +204,12 @@ export struct SingerDetailPage {
       .height(44)
       .justifyContent(FlexAlign.Center)
       .onClick(() => {
-        this.currentTabIndex = 1
-        if (this.albumList.length === 0 && !this.isLoadingAlbums) {
-          this.loadAlbums()
+        if (this.currentTabIndex !== 1) {
+          this.currentTabIndex = 1
+          if (this.albumList.length === 0 && !this.isLoadingAlbums) {
+            this.loadAlbums()
+          }
+          this.scrollToSticky()
         }
       })
     }
@@ -191,77 +221,74 @@ export struct SingerDetailPage {
     })
   }
 
+  private scrollToSticky(): void {
+    // 延迟执行，等待 Tab 内容切换渲染完成
+    setTimeout(() => {
+      this.scroller.scrollToIndex(1)
+    }, 100)
+  }
+
+  /** 歌曲 Tab 列表项 */
   @Builder
-  buildSongTab() {
+  buildSongTabItems() {
     if (this.viewModel.isLoading && this.viewModel.songList.length === 0) {
-      Column() {
-        LoadingProgress()
-          .width(48)
-          .height(48)
-          .color('#6200EE')
-        Text('加载中...')
-          .fontSize(14)
-          .fontColor(Color.Gray)
-          .margin({ top: 8 })
+      ListItem() {
+        Column() {
+          LoadingProgress()
+            .width(48)
+            .height(48)
+            .color('#6200EE')
+          Text('加载中...')
+            .fontSize(14)
+            .fontColor(Color.Gray)
+            .margin({ top: 8 })
+        }
+        .width('100%')
+        .height(200)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
       }
-      .width('100%')
-      .height(200)
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center)
+    } else if (this.viewModel.songList.length === 0 && !this.viewModel.isLoadingSongs) {
+      ListItem() {
+        Column() {
+          Image($r('app.media.icon_home_placeholder'))
+            .width(64)
+            .height(64)
+            .opacity(0.3)
+          Text('暂无歌曲')
+            .fontSize(14)
+            .fontColor(Color.Gray)
+            .margin({ top: 12 })
+        }
+        .width('100%')
+        .height(200)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
+      }
     } else {
-      Column({ space: 0 }) {
-        // 工具栏
-        if (this.viewModel.songList.length > 0) {
-          SimpleSongListToolbar()
-            .margin({ top: 8, bottom: 4 })
-        }
-
-        // 歌曲列表 — 用固定高度让 List 可独立滚动
-        if (this.viewModel.songList.length > 0) {
-          List() {
-            Repeat(this.viewModel.songList).each((repeatItem) => {
-              ListItem() {
-                SongListItemView({
-                  host: this.viewModel,
-                  songList: this.viewModel.songList,
-                  song: repeatItem.item,
-                  index: repeatItem.index
-                })
-              }
-            })
-          }
-          .width('100%')
-          .height(400)
-          .edgeEffect(EdgeEffect.Spring)
-          .onReachEnd(() => {
-            this.viewModel.loadSongs(true)
+      Repeat(this.viewModel.songList).each((repeatItem) => {
+        ListItem() {
+          SongListItemView({
+            host: this.viewModel,
+            songList: this.viewModel.songList,
+            song: repeatItem.item,
+            index: repeatItem.index
           })
-        } else if (!this.viewModel.isLoadingSongs) {
-          Column() {
-            Image($r('app.media.icon_home_placeholder'))
-              .width(64)
-              .height(64)
-              .opacity(0.3)
-            Text('暂无歌曲')
-              .fontSize(14)
-              .fontColor(Color.Gray)
-              .margin({ top: 12 })
-          }
-          .width('100%')
-          .height(200)
-          .justifyContent(FlexAlign.Center)
-          .alignItems(HorizontalAlign.Center)
         }
+      })
 
-        // 底部加载状态
-        if (this.viewModel.isLoadingSongs && this.viewModel.songList.length > 0) {
+      // 底部加载状态
+      if (this.viewModel.isLoadingSongs && this.viewModel.songList.length > 0) {
+        ListItem() {
           Text('正在加载更多...')
             .fontSize(12)
             .fontColor(Color.Gray)
             .width('100%')
             .textAlign(TextAlign.Center)
             .padding({ top: 12, bottom: 12 })
-        } else if (!this.viewModel.hasMore && this.viewModel.songList.length > 0) {
+        }
+      } else if (!this.viewModel.hasMore && this.viewModel.songList.length > 0) {
+        ListItem() {
           Text('已加载全部')
             .fontSize(12)
             .fontColor(Color.Gray)
@@ -270,27 +297,40 @@ export struct SingerDetailPage {
             .padding({ top: 12, bottom: 12 })
         }
       }
-      .width('100%')
     }
   }
+
   @Builder
   buildSingerInfoCard() {
     if (this.viewModel.singerDetail) {
-      Column({ space: 8 }) {
+      Column() {
         // 歌手大图
         Image(this.viewModel.singerDetail.getSingerPic() ?? '')
           .width('100%')
-          .height(200)
-          .objectFit(ImageFit.Cover)
-          .backgroundColor('#E0E0E0')
+          .objectFit(ImageFit.Contain)
 
         // 歌手基本信息
         Column({ space: 6 }) {
-          this.buildInfoRow('歌手id', `${this.viewModel.singerDetail.getSingerId()}`)
-          this.buildInfoRow('歌手mid', this.viewModel.singerMid)
-          this.buildInfoRow('歌手名称', this.viewModel.singerDetail.getSingerName())
+          CopyableInfoField({
+            label: '歌手id',
+            value: `${this.viewModel.singerDetail.getSingerId()}`,
+            fontSize: 13,
+            fontColor: '#666666'
+          })
+          CopyableInfoField({
+            label: '歌手mid',
+            value: this.viewModel.singerMid,
+            fontSize: 13,
+            fontColor: '#666666'
+          })
+          CopyableInfoField({
+            label: '歌手名称',
+            value: this.viewModel.singerDetail.getSingerName(),
+            fontSize: 13,
+            fontColor: '#666666'
+          })
 
-          // Wiki 基本信息 — 使用独立的 @Builder 避免 @Builder 中写 const
+          // Wiki 基本信息
           this.buildWikiSection()
         }
         .width('100%')
@@ -316,95 +356,126 @@ export struct SingerDetailPage {
     }
     return result
   }
+
   @Builder
   buildWikiSection() {
     if (this.viewModel.singerDetail?.getWikiInfo()) {
-      // Wiki 基本信息 — ForEach 是 UI 组件语法
+      // Wiki 基本信息
       ForEach(
         this.getWikiBasicInfoArray(this.viewModel.singerDetail.getWikiInfo()),
         (item: WikiEntry) => {
-          this.buildInfoRow(item.key, item.value)
+          CopyableInfoField({
+            label: item.key,
+            value: item.value,
+            fontSize: 13,
+            fontColor: '#666666',
+            maxLines: 9
+          })
         },
         (item: WikiEntry) => item.key
       )
 
-      // 歌手简介
-      if (this.viewModel.singerDetail.getWikiInfo()?.getDesc()) {
-        this.buildInfoRow('歌手简介', this.viewModel.singerDetail.getWikiInfo()!.getDesc()!)
-      }
+      // 歌手简介 — 默认折叠，点击展开
+      this.buildWikiDesc()
     }
   }
-  @Builder
-  buildInfoRow(label: string, value: string) {
-    if (value && value.length > 0) {
-      Row() {
-        Text(`${label}:`)
-          .fontSize(13)
-          .fontColor('#333333')
-          .fontWeight(FontWeight.Bold)
-          .width(80)
 
-        Text(value)
+  @Builder
+  buildWikiDesc() {
+    if (this.viewModel.singerDetail?.getWikiInfo()?.getDesc() &&
+      this.viewModel.singerDetail!.getWikiInfo()!.getDesc()!.length > 0) {
+      Row() {
+        Text('歌手简介:')
           .fontSize(13)
           .fontColor('#666666')
           .layoutWeight(1)
-          .maxLines(3)
-          .textOverflow({ overflow: TextOverflow.Ellipsis })
+
+        Text(this.isWikiExpanded ? '收起 ▲' : '展开 ▼')
+          .fontSize(12)
+          .fontColor('#1890FF')
+          .onClick(() => {
+            this.isWikiExpanded = !this.isWikiExpanded
+          })
       }
       .width('100%')
-      .alignItems(VerticalAlign.Top)
+      .alignItems(VerticalAlign.Center)
+
+      if (this.isWikiExpanded) {
+        Text(this.viewModel.singerDetail!.getWikiInfo()!.getDesc()!)
+          .fontSize(13)
+          .fontColor('#666666')
+          .width('100%')
+          .maxLines(99)
+      }
     }
   }
 
   @Builder
-  buildAlbumTab() {
+  buildAlbumTabItems() {
     if (this.isLoadingAlbums && this.albumList.length === 0) {
-      Column() {
-        LoadingProgress()
-          .width(48)
-          .height(48)
-          .color('#6200EE')
-        Text('加载中...')
-          .fontSize(14)
-          .fontColor(Color.Gray)
-          .margin({ top: 8 })
+      ListItem() {
+        Column() {
+          LoadingProgress()
+            .width(48)
+            .height(48)
+            .color('#6200EE')
+          Text('加载中...')
+            .fontSize(14)
+            .fontColor(Color.Gray)
+            .margin({ top: 8 })
+        }
+        .width('100%')
+        .height(200)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
       }
-      .width('100%')
-      .height(200)
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center)
     } else if (this.albumList.length === 0) {
-      Column() {
-        Image($r('app.media.icon_home_placeholder'))
-          .width(64)
-          .height(64)
-          .opacity(0.3)
-        Text('暂无专辑')
-          .fontSize(14)
-          .fontColor(Color.Gray)
-          .margin({ top: 12 })
+      ListItem() {
+        Column() {
+          Image($r('app.media.icon_home_placeholder'))
+            .width(64)
+            .height(64)
+            .opacity(0.3)
+          Text('暂无专辑')
+            .fontSize(14)
+            .fontColor(Color.Gray)
+            .margin({ top: 12 })
+        }
+        .width('100%')
+        .height(200)
+        .justifyContent(FlexAlign.Center)
+        .alignItems(HorizontalAlign.Center)
       }
-      .width('100%')
-      .height(200)
-      .justifyContent(FlexAlign.Center)
-      .alignItems(HorizontalAlign.Center)
     } else {
-      List() {
-        Repeat(this.albumList).each((repeatItem) => {
-          ListItem() {
-            this.buildAlbumItem(repeatItem.item)
-          }
-        })
-      }
-      .width('100%')
-      .height(400)
-      .padding({ left: 12, right: 12, top: 8 })
-      .edgeEffect(EdgeEffect.Spring)
-      .onReachEnd(() => {
-        this.loadAlbums(true)
+      Repeat(this.albumList).each((repeatItem) => {
+        ListItem() {
+          this.buildAlbumItem(repeatItem.item)
+        }
       })
+
+      // 底部加载状态
+      if (this.isLoadingAlbums && this.albumList.length > 0) {
+        ListItem() {
+          Text('正在加载更多...')
+            .fontSize(12)
+            .fontColor(Color.Gray)
+            .width('100%')
+            .textAlign(TextAlign.Center)
+            .padding({ top: 12, bottom: 12 })
+        }
+      } else if (!this.albumHasMore && this.albumList.length > 0) {
+        ListItem() {
+          Text('已加载全部')
+            .fontSize(12)
+            .fontColor(Color.Gray)
+            .width('100%')
+            .textAlign(TextAlign.Center)
+            .padding({ top: 12, bottom: 12 })
+        }
+      }
     }
   }
+
   @Builder
   buildAlbumItem(album: IAlbum) {
     Row({ space: 12 }) {

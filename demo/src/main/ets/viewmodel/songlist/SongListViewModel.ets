@@ -44,7 +44,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
   /** 专辑ID（TYPE_ALBUM 场景使用） */
   public albumId: number = 0
   public page: number = 0
-  public readonly pageSize: number = 30
+  public readonly pageSize: number = 200
   /** passBack 游标（TYPE_FOLDER 场景使用），用于基于游标的分页，保证大歌单遍历完整性 */
   private folderPassBack: string = ''
   /** 播放列表类型，用于区分专辑/歌单等场景 */
@@ -358,8 +358,6 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
             this.songList = firstPageSongs
             this.hasMore = firstPageSongs.length >= this.pageSize
             this.page = 1
-            // 继续加载剩余页面，确保"播放全部"时 songList 已完整
-            await this.loadRemainingPages()
           }
           MLog.i(TAG, `fetchSingerDetail success: ${this.listName}, songs: ${this.songList.length}`)
         } else {
@@ -392,6 +390,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
       }
     }
   }
+
   /**
    * 异步查询歌单是否已收藏（TYPE_FOLDER 场景）
    */
@@ -561,6 +560,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
       this.showAllLoadedTip = true
     }
   }
+
   /**
    * 加载剩余页面（从当前 page 开始，不清空已有数据）
    * 供 fetchAlbumDetail 中榜单/歌手场景使用，在首屏数据已填充后继续拉取后续页
@@ -580,6 +580,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
     }
     MLog.i(TAG, `loadRemainingPages done, total songs: ${this.songList.length}`)
   }
+
   /**
    * 加载单页歌曲（供 onReachEnd 兜底使用）
    * TYPE_FOLDER 场景使用 passBack 游标，忽略 pageIndex 参数
@@ -766,6 +767,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
     this.refreshPlayState()
     MLog.i(TAG, 'registerPlayEventListener done')
   }
+
   /**
    * 解注册播放事件监听，页面销毁时调用
    */
@@ -777,6 +779,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
     this.isEventListenerRegistered = false
     MLog.i(TAG, 'unregisterPlayEventListener done')
   }
+
   /**
    * 实现 IMediaEventListener
    */
@@ -798,6 +801,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
       }
     }
   }
+
   /**
    * 手动刷新播放状态（首次注册时同步当前状态）
    */
@@ -895,6 +899,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
     this.reportRecentPlay()
     return true
   }
+
   // 判断当前播放列表是否为本列表
   isCurrentAlbumPlaying(): boolean {
     return this.currentPlayStatus === PlayStatus.PLAYING
@@ -912,6 +917,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
     return currentListType === this.playListType
       && currentListId === this.currentListId
   }
+
   /**
    * 暂停播放
    */
@@ -924,6 +930,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
       this.refreshPlayState()
     }
   }
+
   /**
    * 恢复播放
    */
@@ -960,6 +967,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
       MLog.i(TAG, `shuffleAppendToPlaylist success, count: ${shuffled.length}`)
     }
   }
+
   /**
    * 点击歌曲 → 播放该歌曲
    * 若点击的歌曲不可播放（置灰），返回 false，由调用方弹出无版权提示
@@ -1010,12 +1018,14 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
     }
     this.playSongAt(index, songList)
   }
+
   /**
    * 是否处于多选编辑模式（ISongListItemHost 接口）
    */
   isEditorMode(): boolean {
     return this.showEditorView
   }
+
   /**
    * 获取指定位置的序号颜色（ISongListItemHost 接口）
    * 前三名红色，其余灰色
@@ -1023,6 +1033,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
   getIndexColor(index: number): string {
     return index < 3 ? '#FF4D4F' : '#666666'
   }
+
   /**
    * 从指定位置开始，找到第一首可播放歌曲的索引
    * 优先从 startIndex 往后找；若后面没有可播放歌曲，再从头找到 startIndex 之前
@@ -1047,6 +1058,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
     }
     return -1
   }
+
   /**
    * 添加歌曲到下一曲
    */
@@ -1070,6 +1082,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
       MLog.w(TAG, `appendToPlaylist failed: ${song.getSongName()}, error: ${result}`)
     }
   }
+
   /**
    * 切换单首歌曲收藏状态
    * 根据 DemoGlobal.isPersonalAssets 判断走资产模块还是直接 API
@@ -1151,12 +1164,14 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
   isSongCollected(song: ISongInfo): boolean {
     return this.collectedSongIds.has(song.getSongId())
   }
+
   /**
    * 判断歌曲是否为当前正在播放的歌曲
    */
   isCurrentPlayingSong(song: ISongInfo): boolean {
     return this.currentPlayingSongId === song.getSongId()
   }
+
   /**
    * 切换多选模式
    */
@@ -1166,6 +1181,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
       this.clearSelection()
     }
   }
+
   /**
    * 全选/取消全选
    */
@@ -1264,6 +1280,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
   canDeleteSelected(): boolean {
     return this.playListType === MusicListType.TYPE_NULL && this.folderId > 0
   }
+
   /**
    * 删除选中的歌曲
    * - 歌单场景：调用 deleteSongFromFolder API，成功后重新加载
@@ -1309,7 +1326,7 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
         // 重新加载歌曲列表
         this.loadSongs()
       } else {
-        ToastUtil.show(`${resp?.errorMsg||"删除失败"}`)
+        ToastUtil.show(`${resp?.errorMsg || "删除失败"}`)
         MLog.w(TAG, `deleteSelectedSongs failed: ${resp?.errorMsg}`)
       }
     } catch (e) {
@@ -1339,7 +1356,8 @@ export class SongListViewModel implements IMediaEventListener, ISongListItemHost
       MLog.w(TAG, 'addSongsByIds: invalid input format')
       return
     }
-    const idList = this.addSongInputText.trim().split(',')
+    const idList = this.addSongInputText.trim()
+      .split(',')
       .map((s) => parseInt(s.trim()))
       .filter((n) => !isNaN(n))
     if (idList.length === 0) {

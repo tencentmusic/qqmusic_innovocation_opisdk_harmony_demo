@@ -182,22 +182,21 @@ export struct LoginButtonAreaView {
         ToastUtil.show("上下文未初始化")
       }
     } else if (item === '微信登录') {
-      ToastUtil.show("暂不支持微信登录")
-      // const uiContext = AppUtil.abilityContext
-      // if (uiContext) {
-      //   OpenApiSdk.loginApi?.loginManager.wxLogin(uiContext, WX_APP_ID).then(
-      //     async (res) => {
-      //       if (res.data) {
-      //         ToastUtil.show('正在唤起微信...')
-      //         await this.viewModel.updateData()
-      //         this.homeViewModel.refreshAfterLogin()
-      //       } else {
-      //         ToastUtil.show(res.errorMsg)
-      //       }
-      //     })
-      // } else {
-      //   ToastUtil.show('UI上下文未初始化')
-      // }
+      const uiContext = AppUtil.abilityContext
+      if (uiContext) {
+        OpenApiSdk.loginApi?.wxLogin(uiContext, WX_APP_ID).then(
+          async (res) => {
+            if (res.data) {
+              ToastUtil.show('正在唤起微信...')
+              await this.viewModel.updateData()
+              this.homeViewModel.refreshAfterLogin()
+            } else {
+              ToastUtil.show(res.errorMsg)
+            }
+          })
+      } else {
+        ToastUtil.show('UI上下文未初始化')
+      }
     } else if (item === 'QQ音乐登录') {
       OpenApiSdk.loginApi?.qqMusicLogin(
         async (sus: boolean, msg: string | undefined) => {

@@ -1,7 +1,12 @@
 import { MLog } from '@qqmusic/opisdk-base'
+import { IBanner } from '@qqmusic/opisdk-entity'
 import { HomeViewModel } from '../../viewmodel/HomeViewModel'
 import { RecommendItemView } from './RecommendItemView'
 import { ToastUtil } from '../../utils/ToastUtil'
+import { NavController } from '../../nav/NavController'
+import { RouteName } from '../../nav/RouteMap'
+import { CommonWebPageParams, RankDetailPageParams, SongListPageParams } from '../../nav/RouteParams'
+import { MusicListType } from '@qqmusic/opisdk-qmutils'
 
 const TAG = 'HomeRecommendView'
 
@@ -117,6 +122,11 @@ export struct HomeRecommendView {
               .fontSize(12)
               .fontColor(Color.Yellow)
               .fontWeight(FontWeight.Medium)
+            if (repeatItem.item.getDesc()) {
+              Text(`描述: ${repeatItem.item.getDesc()}`)
+                .fontSize(11)
+                .fontColor(Color.Yellow)
+            }
             Text(`类型: ${this.getBannerTypeName(repeatItem.item.getType())}`)
               .fontSize(11)
               .fontColor(Color.Yellow)
@@ -130,7 +140,7 @@ export struct HomeRecommendView {
         .width('100%')
         .height(130)
         .onClick(() => {
-          ToastUtil.show(`Banner: ${repeatItem.item.getTitle()}`)
+          this.handleBannerClick(repeatItem.item)
         })
       })
     }
@@ -148,23 +158,79 @@ export struct HomeRecommendView {
   }
 
   /**
+   * 处理 Banner 点击事件
+   * 类型: 1.歌曲  2.歌单  3.专辑  4.H5  5.排行榜  6.电台  7+.其他H5
+   */
+  handleBannerClick(banner: IBanner): void {
+    const url = banner.getUrl()
+    if (!url || url.length === 0) {
+      ToastUtil.show('url为空')
+      return
+    }
+    const bannerType = banner.getType()
+    const contentId = banner.getContentId()
+    const title = banner.getTitle()
+    MLog.i(TAG, `Banner clicked: type=${bannerType}, contentId=${contentId}, url=${url}`)
+    // 根据类型处理跳转：
+    // 1.歌曲  2.歌单  3.专辑  4.H5  5.排行榜  6.电台  7+.其他H5
+    switch (bannerType) {
+      case 1:
+        // 歌曲：获取歌曲信息并播放
+        this.homeViewModel.playBannerSong(contentId, title)
+        break
+      case 2:
+        // 歌单：跳转歌单详情
+        NavController.getInstance().push(RouteName.SONG_LIST_PAGE,
+          new SongListPageParams(MusicListType.TYPE_FOLDER, Number(contentId), title))
+        break
+      case 3:
+        // 专辑：跳转专辑详情
+        NavController.getInstance().push(RouteName.SONG_LIST_PAGE,
+          new SongListPageParams(MusicListType.TYPE_ALBUM, Number(contentId), title))
+        break
+      case 4:
+        // H5：打开 WebView
+        NavController.getInstance().push(RouteName.COMMON_WEB_PAGE,
+          new CommonWebPageParams(url, title))
+        break
+      case 5:
+        // 排行榜：跳转排行榜详情
+        NavController.getInstance().push(RouteName.RANK_DETAIL_PAGE,
+          new RankDetailPageParams(Number(contentId), title))
+        break
+      case 6:
+        // 电台：播放电台
+        this.homeViewModel.playBannerRadio()
+        break
+      default:
+      // 未知类型（如 type=7 车载VIP等），统一按 H5 打开 URL
+        MLog.i(TAG, `Banner unknown type=${bannerType}, open as H5: ${url}`)
+        NavController.getInstance().push(RouteName.COMMON_WEB_PAGE,
+          new CommonWebPageParams(url, title))
+        break
+    }
+  }
+
+  /**
    * 获取 Banner 类型名称
+   * 类型: 1.歌曲  2.歌单  3.专辑  4.H5  5.排行榜  6.电台  7+.其他
    */
   getBannerTypeName(type: number | null): string {
-    if (type === 1) {
-      return '歌曲'
-    } else if (type === 2) {
-      return '歌单'
-    } else if (type === 3) {
-      return '专辑'
-    } else if (type === 4) {
-      return 'H5'
-    } else if (type === 5) {
-      return '排行榜'
-    } else if (type === 6) {
-      return '电台'
-    } else {
-      return `未知type(${type})`
+    switch (type) {
+      case 1:
+        return '歌曲'
+      case 2:
+        return '歌单'
+      case 3:
+        return '专辑'
+      case 4:
+        return 'H5'
+      case 5:
+        return '排行榜'
+      case 6:
+        return '电台'
+      default:
+        return `未知type(${type})`
     }
   }
 }

@@ -3,6 +3,7 @@ import { Route } from './Route'
 // 页面 @Builder 导出（将在各页面改造完成后生效）
 import { FolderListPageBuilder } from '../pages/folderlist/FolderListPage'
 import { PlayerPageBuilder } from '../pages/player/PlayerPage'
+import { PlayerNewPageBuilder } from '../pages/player/PlayerNewPage'
 import { PlayListPageBuilder } from '../pages/player/PlayListPage'
 import { OtherSettingPageBuilder } from '../pages/setting/OtherSettingPage'
 import { DebugSettingPageBuilder } from '../pages/setting/DebugSettingPage'
@@ -42,6 +43,7 @@ import { LyricPageBuilder } from '../pages/lyric/LyricPage'
 export namespace RouteName {
   export const FOLDER_LIST_PAGE = 'FolderListPage'
   export const PLAYER_PAGE = 'PlayerPage'
+  export const PLAYER_NEW_PAGE = 'PlayerNewPage'
   export const PLAY_LIST_PAGE = 'PlayListPage'
   export const OTHER_SETTING_PAGE = 'OtherSettingPage'
   export const DEBUG_SETTING_PAGE = 'DebugSettingPage'
@@ -99,6 +101,7 @@ export namespace RouteMap {
 
     // 不显示悬浮播放器的页面
     [RouteName.PLAYER_PAGE, new Route(RouteName.PLAYER_PAGE, wrapBuilder(PlayerPageBuilder), true, false)],
+    [RouteName.PLAYER_NEW_PAGE, new Route(RouteName.PLAYER_NEW_PAGE, wrapBuilder(PlayerNewPageBuilder), true, false)],
     [RouteName.PLAY_LIST_PAGE, new Route(RouteName.PLAY_LIST_PAGE, wrapBuilder(PlayListPageBuilder), true, false)],
     [RouteName.MV_PLAYER_PAGE, new Route(RouteName.MV_PLAYER_PAGE, wrapBuilder(MVPlayerPageBuilder), true, false)],
     [RouteName.MV_DETAIL_PAGE, new Route(RouteName.MV_DETAIL_PAGE, wrapBuilder(MVDetailPageBuilder), true, false)],

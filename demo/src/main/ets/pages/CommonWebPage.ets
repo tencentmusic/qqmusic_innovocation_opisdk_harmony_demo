@@ -33,15 +33,13 @@ struct CommonWebPage {
       Column() {
         // 顶部导航栏
         Row() {
-          Image($r('app.media.ic_back_dark'))
-            .width(44).height(44)
+          Image($r('app.media.icon_back_placeholder'))
+            .width(24).height(24)
             .onClick(() => NavController.getInstance().pop())
 
           Text(this.pageTitle)
             .fontSize(18)
             .fontWeight(FontWeight.Medium)
-            .margin({ left: 8 })
-            .layoutWeight(1)
             .maxLines(1)
             .textOverflow({ overflow: TextOverflow.Ellipsis })
 
@@ -49,7 +47,6 @@ struct CommonWebPage {
           Image($r('app.media.icon_refresh'))
             .width(24)
             .height(24)
-            .margin({ right: 16 })
             .onClick(() => {
               if (this.currentUrl) {
                 this.controller.loadUrl(this.currentUrl);
@@ -60,9 +57,8 @@ struct CommonWebPage {
         }
         .width('100%')
         .height(44)
-        .padding({ left: 16 })
-        .borderWidth({ bottom: 0.5 })
-        .borderColor('#36000000')
+        .padding({ left: 16, right: 16 })
+        .justifyContent(FlexAlign.SpaceBetween)
 
         // 加载进度条
         if (this.showProgress && this.isLoading && this.progressValue > 0 && this.progressValue < 100) {
@@ -131,5 +127,5 @@ struct CommonWebPage {
 
 @Builder
 export function CommonWebPageBuilder(params?: Object) {
-  CommonWebPage({args: params})
+  CommonWebPage({ args: params })
 }

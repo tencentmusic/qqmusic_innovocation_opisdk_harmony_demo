@@ -13,14 +13,8 @@ import {
 import { NavController } from '../../nav/NavController'
 import { SingerDetailPageParams } from '../../nav/RouteParams'
 import { RouteName } from '../../nav/RouteMap'
-import { AppUtil } from '../../utils/AppUtil'
 
 const TAG = 'SingerListPage'
-
-/**
- * 悬浮播放器栏高度（与 FloatingPlayerPage 保持一致）
- */
-const FLOATING_PLAYER_HEIGHT = 70
 
 /**
  * 歌手列表页面
@@ -29,21 +23,11 @@ const FLOATING_PLAYER_HEIGHT = 70
  * - 顶部：4 个分类标签按钮（地区/性别/流派/索引），点击展开下拉面板
  * - 下拉面板：网格布局展示具体筛选项，选中后自动关闭面板并刷新列表
  * - 列表：使用 Repeat 懒加载 + key 优化性能
- * - 底部预留播放器栏高度，避免筛选面板被遮挡
  */
 @ComponentV2
 export struct SingerListPage {
   @Consumer('navController') navController: NavController = NavController.getInstance()
   @Local viewModel: SingerListViewModel = new SingerListViewModel()
-
-  /**
-   * 底部播放器栏占用的可视高度
-   * 非首页时 FloatingPlayerPage margin bottom = -bottomSafeArea，
-   * 实际可视高度 = FLOATING_PLAYER_HEIGHT - bottomSafeArea
-   */
-  private get playerBarVisibleHeight(): number {
-    return Math.max(0, FLOATING_PLAYER_HEIGHT - AppUtil.bottomSafeArea)
-  }
 
   aboutToAppear(): void {
     this.viewModel.loadData()
@@ -51,47 +35,46 @@ export struct SingerListPage {
 
   build() {
     NavDestination() {
-      Stack({ alignContent: Alignment.TopStart }) {
-        Column() {
-          // 顶部标题栏
-          this.buildHeader()
+      Column() {
+        // 顶部标题栏
+        this.buildHeader()
 
-          // 筛选栏（分类标签按钮行）
-          this.buildFilterTabBar()
+        // 筛选栏
+        this.buildFilterTabBar()
 
-          // 主内容区
+        // 主内容区 + 下拉筛选面板覆盖层
+        Stack() {
           this.buildContentArea()
+
+          // 下拉筛选面板
+          if (this.viewModel.activeFilterCategory !== null) {
+            Column() {
+              // 筛选面板
+              this.buildFilterDropdownPanel()
+
+              // 半透明遮罩
+              Blank()
+                .width('100%')
+                .layoutWeight(1)
+                .backgroundColor('#80000000')
+                .onClick(() => {
+                  this.viewModel.closeFilterPanel()
+                })
+            }
+            .width('100%')
+            .height('100%')
+          }
         }
         .width('100%')
-        .height('100%')
-        .backgroundColor('#F5F5F5')
-
-        // 下拉筛选面板（覆盖在内容区上方，底部避开播放器栏）
-        if (this.viewModel.activeFilterCategory !== null) {
-          Column() {
-            // 半透明遮罩
-            Blank()
-              .width('100%')
-              .layoutWeight(1)
-              .onClick(() => {
-                this.viewModel.closeFilterPanel()
-              })
-
-            // 筛选面板
-            this.buildFilterDropdownPanel()
-          }
-          .width('100%')
-          .height('100%')
-          .padding({ bottom: this.playerBarVisibleHeight })
-        }
+        .layoutWeight(1)
       }
       .width('100%')
       .height('100%')
+      .backgroundColor('#F5F5F5')
     }
     .hideTitleBar(true)
   }
 
-  // ========= 标题栏 =========
   @Builder
   buildHeader(): void {
     Row() {
@@ -116,8 +99,6 @@ export struct SingerListPage {
     .padding({ left: 16, right: 16 })
     .backgroundColor(Color.White)
   }
-
-  // ========= 筛选分类标签栏 =========
 
   @Builder
   buildFilterTabBar(): void {
@@ -179,6 +160,7 @@ export struct SingerListPage {
       this.viewModel.toggleFilterPanel(FilterCategory.SEX)
     })
   }
+
   @Builder
   buildGenreTab(): void {
     Row({ space: 4 }) {
@@ -223,8 +205,6 @@ export struct SingerListPage {
     })
   }
 
-  // ========= 下拉筛选面板 =========
-
   @Builder
   buildFilterDropdownPanel(): void {
     Column() {
@@ -247,7 +227,12 @@ export struct SingerListPage {
       offsetX: 0,
       offsetY: 4
     })
-    .padding({ left: 12, right: 12, top: 8, bottom: 12 })
+    .padding({
+      left: 12,
+      right: 12,
+      top: 8,
+      bottom: 12
+    })
   }
 
   @Builder
@@ -260,7 +245,12 @@ export struct SingerListPage {
             .fontColor(this.viewModel.selectedArea === item.item.value ? Color.White : '#333333')
             .backgroundColor(this.viewModel.selectedArea === item.item.value ? '#6200EE' : '#F0F0F0')
             .borderRadius(16)
-            .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+            .padding({
+              left: 14,
+              right: 14,
+              top: 6,
+              bottom: 6
+            })
             .margin({ right: 8, bottom: 8 })
             .onClick((): void => {
               this.viewModel.selectArea(item.item.value)
@@ -280,7 +270,12 @@ export struct SingerListPage {
             .fontColor(this.viewModel.selectedSex === item.item.value ? Color.White : '#333333')
             .backgroundColor(this.viewModel.selectedSex === item.item.value ? '#6200EE' : '#F0F0F0')
             .borderRadius(16)
-            .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+            .padding({
+              left: 14,
+              right: 14,
+              top: 6,
+              bottom: 6
+            })
             .margin({ right: 8, bottom: 8 })
             .onClick((): void => {
               this.viewModel.selectSex(item.item.value)
@@ -300,7 +295,12 @@ export struct SingerListPage {
             .fontColor(this.viewModel.selectedGenre === item.item.value ? Color.White : '#333333')
             .backgroundColor(this.viewModel.selectedGenre === item.item.value ? '#6200EE' : '#F0F0F0')
             .borderRadius(16)
-            .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+            .padding({
+              left: 14,
+              right: 14,
+              top: 6,
+              bottom: 6
+            })
             .margin({ right: 8, bottom: 8 })
             .onClick((): void => {
               this.viewModel.selectGenre(item.item.value)
@@ -309,6 +309,7 @@ export struct SingerListPage {
     }
     .width('100%')
   }
+
   @Builder
   buildIndexFilterGrid(): void {
     Flex({ wrap: FlexWrap.Wrap, alignItems: ItemAlign.Center }) {
@@ -319,7 +320,12 @@ export struct SingerListPage {
             .fontColor(this.viewModel.selectedIndex === item.item.value ? Color.White : '#333333')
             .backgroundColor(this.viewModel.selectedIndex === item.item.value ? '#6200EE' : '#F0F0F0')
             .borderRadius(16)
-            .padding({ left: 14, right: 14, top: 6, bottom: 6 })
+            .padding({
+              left: 14,
+              right: 14,
+              top: 6,
+              bottom: 6
+            })
             .margin({ right: 8, bottom: 8 })
             .onClick((): void => {
               this.viewModel.selectIndex(item.item.value)
@@ -328,8 +334,6 @@ export struct SingerListPage {
     }
     .width('100%')
   }
-
-  // ========= 主内容区 =========
 
   @Builder
   buildContentArea(): void {
@@ -412,8 +416,6 @@ export struct SingerListPage {
       })
     }
   }
-
-  // ========= 歌手列表项 =========
 
   @Builder
   buildSingerItem(singer: ISinger): void {

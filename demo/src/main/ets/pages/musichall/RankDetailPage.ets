@@ -98,32 +98,34 @@ export struct RankDetailPage {
                 })
               }
             })
+            // 底部加载状态
+            if (this.viewModel.isLoadingSongs && this.viewModel.songList.length > 0) {
+              ListItem() {
+                Text('正在加载更多...')
+                  .fontSize(12)
+                  .fontColor(Color.Gray)
+                  .width('100%')
+                  .textAlign(TextAlign.Center)
+                  .padding({ top: 12, bottom: 12 })
+              }
+            } else if (!this.viewModel.hasMore && this.viewModel.songList.length > 0) {
+              ListItem() {
+                Text('已加载全部')
+                  .fontSize(12)
+                  .fontColor(Color.Gray)
+                  .width('100%')
+                  .textAlign(TextAlign.Center)
+                  .padding({ top: 12, bottom: 12 })
+              }
+            }
           }
           .width('100%')
           .layoutWeight(1)
-          .padding({ left: 12, right: 12 })
           .edgeEffect(EdgeEffect.Spring)
           .scrollBar(BarState.Off)
           .onReachEnd(() => {
             this.viewModel.loadSongs(true)
           })
-
-          // 底部加载状态
-          if (this.viewModel.isLoadingSongs && this.viewModel.songList.length > 0) {
-            Text('正在加载更多...')
-              .fontSize(12)
-              .fontColor(Color.Gray)
-              .width('100%')
-              .textAlign(TextAlign.Center)
-              .padding({ top: 12, bottom: 12 })
-          } else if (!this.viewModel.hasMore && this.viewModel.songList.length > 0) {
-            Text('已加载全部')
-              .fontSize(12)
-              .fontColor(Color.Gray)
-              .width('100%')
-              .textAlign(TextAlign.Center)
-              .padding({ top: 12, bottom: 12 })
-          }
         }
       }
       .width('100%')
